@@ -14,6 +14,7 @@ matplotlib = "^3.9.0"
 seaborn = "^0.13.2"
 plotly = "^5.22.0"
 streamlit = "^1.36.0"
+openpyxl = "^3.1.5"
 
 [tool.black]
 line-length = 79
