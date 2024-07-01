@@ -5,7 +5,7 @@ import streamlit as st
 st.title("Button Demos")
 
 st.button(
-    label="Course Schedule",
+    label="Show Course Schedule",
     help="Hello world",
 )
 st.button(
