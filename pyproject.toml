@@ -6,7 +6,14 @@ authors = ["Nicholas M. Synovic <nicholas.synovic@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
+intervaltree = "^3.1.0"
+pandas = "^2.2.2"
+numpy = "^2.0.0"
+matplotlib = "^3.9.0"
+seaborn = "^0.13.2"
+plotly = "^5.22.0"
+streamlit = "^1.36.0"
 
 [tool.black]
 line-length = 79
