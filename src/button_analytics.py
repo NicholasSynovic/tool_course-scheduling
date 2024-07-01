@@ -1,20 +1,6 @@
 # Import Streamlit
 import streamlit as st
 
-"""
-Buttons:
-
-- Course Schedule
-- Online only courses
-- Schedule Density
-- Course Enrollment Health
-- Instructor Assignments
-- Number of Assignments per Faculty
-- Course by Number
-- Teaching Distribution by Weighted Enrollment
-- Enrollments by Course Level
-"""
-
 # Title of your app
 st.title("Button Demos")
 
