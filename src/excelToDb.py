@@ -2,8 +2,8 @@ import sqlite3
 from datetime import datetime
 
 import pandas as pd
-
-# from IPython.display import display, HTML
+import plotly.graph_objects as go
+from intervaltree import Interval, IntervalTree
 
 xcelPath = "/Users/karolinaryzka/Documents/tool_course-scheduling/1246-Real_Time_Class_Enrollments.xlsx"
 df = pd.read_excel(xcelPath)
@@ -13,34 +13,6 @@ conn = sqlite3.connect(dbPath)
 
 table = "schedule"
 df.to_sql(table, conn, if_exists="replace", index=False)
-
-
-# def print_colored(text, color='black', emphasis=True):
-#     # Use the <b> tag for bold emphasis if needed
-#     if emphasis:
-#         text = f"<b>{text}</b>"
-#     # Display the HTML content with color
-#     display(HTML(f"<p style='color: {color};'>{text}</p>"))
-
-
-# def set_default_styling(group):
-
-#     group.style.set_table_styles([
-#       {'selector': 'th', 'props': [('text-align', 'left'), ('width', '100px')]},
-#     ]).applymap(lambda x: 'text-align: left;', subset=pd.IndexSlice[:, :])
-
-# "Success"
-
-# def get_styled_group(group):
-#   return group.style.set_table_styles(
-#     [{'selector': 'th',
-#       'props': [('text-align', 'left'), ('width', '150px')]},
-#      {'selector': 'td',
-#       'props': [('text-align', 'left'), ('width', '150px')]}
-#     ]
-#   )
-
-# "Success"
 
 depts = ["COMP"]
 
@@ -175,6 +147,124 @@ group = df2[df2["ENROLL TOTAL"] >= 0]
 
 df2 = group
 print(df2[FILTER_FIELDS])
-# get_styled_group(df2[FILTER_FIELDS])
+
+schedule_df = group
+
+
+def time_to_minutes(t):
+    return t.hour * 60 + t.minute
+
+
+# One of the most important data structures (hope we're teaching it)
+def create_interval_trees(schedule):
+    day_trees = {day: IntervalTree() for day in ["M", "T", "W", "R", "F", "S"]}
+    # print(day_trees)
+    for index, row in schedule_df.iterrows():
+        pattern = row["TRAD MEETING PATTERN"]
+        start = row["CLASS START TIME"]
+        end = row["CLASS END TIME"]
+        if start == end:
+            continue
+        start_time = datetime.strptime(start, "%H:%M:%S")
+        end_time = datetime.strptime(end, "%H:%M:%S")
+        start_minutes = time_to_minutes(start_time)
+        end_minutes = time_to_minutes(end_time)
+        total_minutes = 0
+        for day in pattern:  # e.g. ('M', 'W', 'F') iterates as 'M','W','F'
+            interval = Interval(start_minutes, end_minutes)
+            try:
+                day_trees[day].add(interval)
+                total_minutes += end_minutes - start_minutes
+            except:
+                print(interval, start_time, end_time, pattern)
+        if (
+            total_minutes != 150
+        ):  # TODO: We need # credits to know the correct answer but this catches MOST
+            print(
+                "Checking for duraton != 150 minutes (possibly ok): ",
+                row["FQ_CLASS_SECTION"],
+                row["TRAD MEETING PATTERN"],
+                row["CLASS START TIME"],
+                row["CLASS END TIME"],
+            )
+    return day_trees
+
+
+# Assume create_interval_trees and time_to_minutes are defined elsewhere
+
+
+def plot_schedule_with_overlap(schedule, overlap_threshold=2):
+    days = ["M", "T", "W", "R", "F", "S"]
+    days.reverse()  # For more natural appearance on the chart.
+    times = [
+        datetime(2023, 1, 1, hour, minute)
+        for hour in range(8, 19)
+        for minute in range(0, 60, 5)
+    ]  # todo remove hard-coding of year/1/1 (safe though)
+    time_labels = [t.strftime("%H:%M") for t in times]
+    day_trees = create_interval_trees(schedule)
+
+    max_overlap = 0
+    markers = []
+
+    for day_index, day in enumerate(days):
+        for t in times:
+            minutes = time_to_minutes(t)
+            overlaps = day_trees[day][minutes]
+            color = "green"
+            if len(overlaps) >= overlap_threshold:
+                color = "red"
+            elif overlaps:
+                color = "orange"
+            if len(overlaps) > max_overlap:
+                max_overlap = len(overlaps)
+            size = 5 + 4 * len(
+                overlaps
+            )  # Base size + additional size for each overlap
+
+            markers.append(
+                {
+                    "x": minutes,
+                    "y": day_index,
+                    "color": color,
+                    "size": size,
+                    "overlaps": len(overlaps),
+                }
+            )
+
+    fig = go.Figure()
+
+    for marker in markers:
+        fig.add_trace(
+            go.Scatter(
+                x=[marker["x"]],
+                y=[marker["y"]],
+                mode="markers",
+                marker=dict(color=marker["color"], size=marker["size"]),
+                text=f"Overlaps: {marker['overlaps']}",
+            )
+        )
+
+    fig.update_layout(
+        title=f"Schedule Density [Maximum course overlap in any interval = {max_overlap}]",
+        xaxis=dict(
+            tickvals=[time_to_minutes(t) for t in times][::12],  # Every hour
+            ticktext=time_labels[::12],
+            title="Time",
+        ),
+        yaxis=dict(
+            tickvals=list(range(len(days))),
+            ticktext=days,
+            title="Day of the Week",
+        ),
+        showlegend=False,
+    )
+
+    fig.show()
+
+
+# Plot the schedule with varying marker size based on overlap
+plot_schedule_with_overlap(schedule_df)
+
 
 conn.close()
