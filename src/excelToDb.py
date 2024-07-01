@@ -49,7 +49,7 @@ query = (
       "CLASS START TIME",
       "CLASS END TIME",
       FACILITY,
-      '(' || INSTRUCTOR || ',' || FACILITY || ',' || "MEETING PATTERN" || ',' ||"CLASS START TIME" || ',' || "CLASS END TIME" || ')' as COMBINED_ID
+      '(' || INSTRUCTOR || ', ' || FACILITY || ', ' || "MEETING PATTERN" || ', ' ||"CLASS START TIME" || ', ' || "CLASS END TIME" || ')' as COMBINED_ID
    FROM
       schedule """
     + where_clause
@@ -142,12 +142,18 @@ FILTER_FIELDS = [
 ]
 
 # Now 'df' holds the contents of 'your_table' as a Pandas DataFrame
-# Filter out any sectinos with 0. If enrollment is 0, likely to be cancelled anyway.
+# Filter out any sections with 0. If enrollment is 0, likely to be cancelled anyway.
 group = df2[df2["ENROLL TOTAL"] >= 0]
 
 df2 = group
+#get course scheduling dataframe
 print(df2[FILTER_FIELDS])
 
+#save course schedule as .xslx file
+xcelResultFilePath = "result.xlsx"
+df2.to_excel(xcelResultFilePath, index=False)
+
+#to find course density
 schedule_df = group
 
 
