@@ -40,3 +40,7 @@ st.button(
     label="Enrollments by Course Level",
     help="Hello world",
 )
+st.button(
+    label="In Trouble Courses",
+    help="Hello world",
+)
