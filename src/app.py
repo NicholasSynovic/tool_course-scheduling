@@ -152,6 +152,7 @@ def scheduleReport(dbPath, df) -> pd.DataFrame:
 
     return dfSr
 
+
 def plotDensity(dbPath, df):
     scheduleDf: pd.DataFrame = scheduleReport(":memory:", df)
     plotScheduleWithOverlap(scheduleDf)
@@ -484,7 +485,7 @@ def main() -> None:
         if st.button("Teaching Distribution by Weighted Enrollment"):
             teachingDistr(df)
 
-        #work on graph coloring
+        # work on graph coloring
         if st.button("Enrollments by Course Level"):
             resultDf: pd.DataFrame = scheduleReport(":memory:", df)
             resultDf["WEIGHTED ENROLL TOTAL"] = resultDf.apply(
