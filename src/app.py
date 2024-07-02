@@ -1,29 +1,33 @@
+import itertools
 import sqlite3
 from datetime import datetime
-import itertools
+
+import matplotlib as plt
+import matplotlib.colors as mcolors
 import pandas as pd
 import plotly.graph_objects as go
-import matplotlib.colors as mcolors
-import matplotlib as plt
 import streamlit as st
 from intervaltree import Interval, IntervalTree
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
-def traditional_meeting_pattern(row):
+
+def traditionalMeetingPattern(row):
     meeting_pattern = row["MEETING PATTERN"]
     if meeting_pattern:
         return (
             meeting_pattern.replace("TR", "R")
             .replace("SA", "S")
             .replace("SU", "X")
-        )  # Remove all 2-letter codes and follow MTWRFSX format.
+        )
     else:
         return ""
 
-def time_to_minutes(t):
+
+def timeToMinutes(t):
     return t.hour * 60 + t.minute
 
-def unit_class_duration(row):
+
+def unitClassDuration(row):
     start = row["CLASS START TIME"]
     end = row["CLASS END TIME"]
 
@@ -31,16 +35,18 @@ def unit_class_duration(row):
         return 0
     start_time = datetime.strptime(start, "%H:%M:%S")
     end_time = datetime.strptime(end, "%H:%M:%S")
-    start_minutes = time_to_minutes(start_time)
-    end_minutes = time_to_minutes(end_time)
+    start_minutes = timeToMinutes(start_time)
+    end_minutes = timeToMinutes(end_time)
     total_minutes = end_minutes - start_minutes
     return total_minutes
 
-def instructional_time(row):
+
+def instructionalTime(row):
     meeting_pattern = row["TRAD MEETING PATTERN"]
     return len(meeting_pattern) * row["UNIT CLASS DURATION"]
 
-def create_interval_trees(schedule_df):
+
+def createIntervalTrees(schedule_df):
     day_trees = {day: IntervalTree() for day in ["M", "T", "W", "R", "F", "S"]}
     for index, row in schedule_df.iterrows():
         pattern = row["TRAD MEETING PATTERN"]
@@ -50,8 +56,8 @@ def create_interval_trees(schedule_df):
             continue
         start_time = datetime.strptime(start, "%H:%M:%S")
         end_time = datetime.strptime(end, "%H:%M:%S")
-        start_minutes = time_to_minutes(start_time)
-        end_minutes = time_to_minutes(end_time)
+        start_minutes = timeToMinutes(start_time)
+        end_minutes = timeToMinutes(end_time)
         total_minutes = 0
         for day in pattern:
             interval = Interval(start_minutes, end_minutes)
@@ -71,7 +77,8 @@ def create_interval_trees(schedule_df):
             )
     return day_trees
 
-def scheduleReport(dbPath, df) -> pd.DataFrame :
+
+def scheduleReport(dbPath, df) -> pd.DataFrame:
     conn = sqlite3.connect(dbPath)
     table = "schedule"
     df.to_sql(table, conn, if_exists="replace", index=False)
@@ -121,52 +128,36 @@ def scheduleReport(dbPath, df) -> pd.DataFrame :
 
     pd.options.display.max_rows = 999
 
-    df2 = df.drop_duplicates(subset=["FQ_CLASS_SECTION"])
-    df2 = df2.copy()
+    dfSr = df.drop_duplicates(subset=["FQ_CLASS_SECTION"])
+    dfSr = dfSr.copy()
 
     unknown_instructor_name = "Turing, Alan"
-    df2["INSTRUCTOR"].fillna(unknown_instructor_name)
+    dfSr["INSTRUCTOR"].fillna(unknown_instructor_name)
 
     unknown_combined_id = "(Doyle Center, No Start Time, No End Time)"
-    df2["COMBINED_ID"].fillna(unknown_combined_id)
+    dfSr["COMBINED_ID"].fillna(unknown_combined_id)
 
-    df2["TRAD MEETING PATTERN"] = df2.apply(traditional_meeting_pattern, axis=1)
-    df2["CLASS START TIME"] = df["CLASS START TIME"].str.split(" ").str[1]
-    df2["CLASS END TIME"] = df["CLASS END TIME"].str.split(" ").str[1]
-    df2["COMBINED_ID"] = df["COMBINED_ID"].str.replace("1900-01-01", "")
+    dfSr["TRAD MEETING PATTERN"] = dfSr.apply(
+        traditionalMeetingPattern, axis=1
+    )
+    dfSr["CLASS START TIME"] = df["CLASS START TIME"].str.split(" ").str[1]
+    dfSr["CLASS END TIME"] = df["CLASS END TIME"].str.split(" ").str[1]
+    dfSr["COMBINED_ID"] = df["COMBINED_ID"].str.replace("1900-01-01", "")
 
-    df2["UNIT CLASS DURATION"] = df2.apply(unit_class_duration, axis=1)
-    df2["INSTRUCTIONAL TIME"] = df2.apply(instructional_time, axis=1)
+    dfSr["UNIT CLASS DURATION"] = dfSr.apply(unitClassDuration, axis=1)
+    dfSr["INSTRUCTIONAL TIME"] = dfSr.apply(instructionalTime, axis=1)
 
-    FILTER_FIELDS = [
-        "FQ_CLASS_SECTION",
-        "CLASS TITLE",
-        "INSTRUCTOR",
-        "ENROLL TOTAL",
-        "TRAD MEETING PATTERN",
-        "INSTRUCTIONAL TIME",
-        "MEETING PATTERN",
-        "UNIT CLASS DURATION",
-        "CLASS START TIME",
-        "CLASS END TIME",
-        "FACILITY",
-        "COMBINED_ID",
-    ]
+    group = dfSr[dfSr["ENROLL TOTAL"] >= 0]
+    dfSr = group
 
-    group = df2[df2["ENROLL TOTAL"] >= 0]
-    df2 = group
-    #return  df2[FILTER_FIELDS]
-    return df2
-
-    #schedule_df = group
-
+    return dfSr
 
 def plotDensity(dbPath, df):
-    #scheduleReport(":memory:", df)
-    schedule_df = scheduleReport(":memory:", df)
-    plot_schedule_with_overlap(schedule_df)
+    scheduleDf: pd.DataFrame = scheduleReport(":memory:", df)
+    plotScheduleWithOverlap(scheduleDf)
 
-def plot_schedule_with_overlap(schedule_df, overlap_threshold=2):
+
+def plotScheduleWithOverlap(scheduleDf, overlap_threshold=2):
     days = ["M", "T", "W", "R", "F", "S"]
     days.reverse()  # For more natural appearance on the chart.
     times = [
@@ -175,14 +166,14 @@ def plot_schedule_with_overlap(schedule_df, overlap_threshold=2):
         for minute in range(0, 60, 5)
     ]  # todo remove hard-coding of year/1/1 (safe though)
     time_labels = [t.strftime("%H:%M") for t in times]
-    day_trees = create_interval_trees(schedule_df)
+    day_trees = createIntervalTrees(scheduleDf)
 
     max_overlap = 0
     markers = []
 
     for day_index, day in enumerate(days):
         for t in times:
-            minutes = time_to_minutes(t)
+            minutes = timeToMinutes(t)
             overlaps = day_trees[day][minutes]
             color = "green"
             if len(overlaps) >= overlap_threshold:
@@ -219,7 +210,7 @@ def plot_schedule_with_overlap(schedule_df, overlap_threshold=2):
     fig.update_layout(
         title=f"Schedule Density [Maximum course overlap in any interval = {max_overlap}]",
         xaxis=dict(
-            tickvals=[time_to_minutes(t) for t in times][::12],  # Every hour
+            tickvals=[timeToMinutes(t) for t in times][::12],  # Every hour
             ticktext=time_labels[::12],
             title="Time",
         ),
@@ -233,43 +224,57 @@ def plot_schedule_with_overlap(schedule_df, overlap_threshold=2):
 
     fig.show()
 
-def weighted_enrollment(row):
-    if '300' <= row['CATALOG NUMBER'] < '400':
-        return row['ENROLL TOTAL'] * 1.0
-    elif '400' <= row['CATALOG NUMBER']:
-        return row['ENROLL TOTAL'] * 5/3
+
+def weightedEnrollment(row):
+    if "300" <= row["CATALOG NUMBER"] < "400":
+        return row["ENROLL TOTAL"] * 1.0
+    elif "400" <= row["CATALOG NUMBER"]:
+        return row["ENROLL TOTAL"] * 5 / 3
     else:
-        return row['ENROLL TOTAL']
+        return row["ENROLL TOTAL"]
 
-def sch_weighted(row):
+
+def schWeighted(row):
     credits = 3
-    if row['CATALOG NUMBER'] in set(['395']):
+    if row["CATALOG NUMBER"] in set(["395"]):
         credits = 1
-    return int(credits * row['WEIGHTED ENROLL TOTAL'])
+    return int(credits * row["WEIGHTED ENROLL TOTAL"])
 
-def enrollment_health(df):
+
+def enrollmentHealth(df):
     dfEh = scheduleReport(":memory:", df)
-    dfEh['WEIGHTED ENROLL TOTAL'] = dfEh.apply(weighted_enrollment, axis=1)
-    dfEh['WEIGHTED SCH TOTAL'] = dfEh.apply(sch_weighted, axis=1)
-    combined_groups = dfEh.groupby('COMBINED_ID')
+    dfEh["WEIGHTED ENROLL TOTAL"] = dfEh.apply(weightedEnrollment, axis=1)
+    dfEh["WEIGHTED SCH TOTAL"] = dfEh.apply(schWeighted, axis=1)
+    combinedGroups = dfEh.groupby("COMBINED_ID")
     report = []
-    for name, group in combined_groups:
-        report.append((group['WEIGHTED ENROLL TOTAL'].sum(), name, group))
+    for name, group in combinedGroups:
+        report.append((group["WEIGHTED ENROLL TOTAL"].sum(), name, group))
     report.sort(reverse=False)
-    FILTER_FIELDS = ['FQ_CLASS_SECTION', 'CLASS TITLE', 'INSTRUCTOR', 'ENROLL TOTAL', 'MEETING PATTERN','CLASS START TIME','CLASS END TIME']
+    FILTER_FIELDS = [
+        "FQ_CLASS_SECTION",
+        "CLASS TITLE",
+        "INSTRUCTOR",
+        "ENROLL TOTAL",
+        "MEETING PATTERN",
+        "CLASS START TIME",
+        "CLASS END TIME",
+    ]
     st.title("Enrollment Health Report")
-    
+
     for group_sum, name, group in report:
         st.markdown(f"<h3>{name}</h3>", unsafe_allow_html=True)
-        
-        if group_sum < 12:
-            group_color = 'red'
-        elif group_sum < 32:
-            group_color = 'green'
-        else:
-            group_color = 'blue'
 
-        st.markdown(f"<p style='color:{group_color}'>Weighted Enrollments = {int(group_sum)}</p>", unsafe_allow_html=True)
+        if group_sum < 12:
+            group_color = "red"
+        elif group_sum < 32:
+            group_color = "green"
+        else:
+            group_color = "blue"
+
+        st.markdown(
+            f"<p style='color:{group_color}'>Weighted Enrollments = {int(group_sum)}</p>",
+            unsafe_allow_html=True,
+        )
 
         inner_group = group[FILTER_FIELDS]
         st.dataframe(inner_group)
@@ -277,110 +282,151 @@ def enrollment_health(df):
         st.markdown("---")
 
 
-def instructor_assignments(df):
-    combined_groups = df.groupby('INSTRUCTOR')
+def instructorAssignments(df):
+    combinedGroups = df.groupby("INSTRUCTOR")
 
     assignments = {}
 
-    for name, group in combined_groups:
+    for name, group in combinedGroups:
         st.markdown(f"<h3>{name}</h3><br/>", unsafe_allow_html=True)
-        inner_group = group[['FQ_CLASS_SECTION', 'CLASS TITLE', 'ENROLL TOTAL']]
+        inner_group = group[
+            ["FQ_CLASS_SECTION", "CLASS TITLE", "ENROLL TOTAL"]
+        ]
 
-        unique_courses_for_instr = group.groupby('COMBINED_ID', dropna=False)
-        didactic_course_count = itertools.count(start=1)
-        for inner_name, inner_group in unique_courses_for_instr:
-            st.write(f"Assignment {next(didactic_course_count)}")
-            st.dataframe(inner_group[['FQ_CLASS_SECTION', 'CLASS TITLE', 'ENROLL TOTAL']])
+        uniqueCoursesForInstr = group.groupby("COMBINED_ID", dropna=False)
+        didacticCourseCount = itertools.count(start=1)
+        for inner_name, inner_group in uniqueCoursesForInstr:
+            st.write(f"Assignment {next(didacticCourseCount)}")
+            st.dataframe(
+                inner_group[
+                    ["FQ_CLASS_SECTION", "CLASS TITLE", "ENROLL TOTAL"]
+                ]
+            )
 
-        assignments[name] = next(didactic_course_count) - 1
-        st.markdown('<hr/>', unsafe_allow_html=True)
+        assignments[name] = next(didacticCourseCount) - 1
+        st.markdown("<hr/>", unsafe_allow_html=True)
     return assignments
 
-def plot_assignments_per_faculty(assignments):
-    assignments_df = pd.DataFrame.from_dict(assignments, orient='index', columns=['Number of Courses'])
-    assignments_df.reset_index(inplace=True)
-    assignments_df.rename(columns={'index': 'Instructor Name'}, inplace=True)
-    assignments_df.sort_values(by=['Instructor Name'], ascending=[False], inplace=True)
 
-    fig = go.Figure(go.Bar(
-        y=assignments_df['Instructor Name'],
-        x=assignments_df['Number of Courses'],
-        orientation='h'
-    ))
+def plotAssignmentsPerFaculty(assignments):
+    assignmentsDf = pd.DataFrame.from_dict(
+        assignments, orient="index", columns=["Number of Courses"]
+    )
+    assignmentsDf.reset_index(inplace=True)
+    assignmentsDf.rename(columns={"index": "Instructor Name"}, inplace=True)
+    assignmentsDf.sort_values(
+        by=["Instructor Name"], ascending=[False], inplace=True
+    )
+
+    fig = go.Figure(
+        go.Bar(
+            y=assignmentsDf["Instructor Name"],
+            x=assignmentsDf["Number of Courses"],
+            orientation="h",
+        )
+    )
 
     fig.update_layout(
-        title='Number of Courses per Instructor',
-        xaxis_title='Number of Courses',
-        yaxis_title='Instructor Name',
+        title="Number of Courses per Instructor",
+        xaxis_title="Number of Courses",
+        yaxis_title="Instructor Name",
     )
 
     st.plotly_chart(fig)
+
 
 def teachingDistr(df):
     dfTd = scheduleReport(":memory:", df)
-    dfTd['WEIGHTED ENROLL TOTAL'] = dfTd.apply(weighted_enrollment, axis=1)
-    total_enrollment = dfTd.groupby('INSTRUCTOR')['WEIGHTED ENROLL TOTAL'].sum().reset_index()
+    dfTd["WEIGHTED ENROLL TOTAL"] = dfTd.apply(weightedEnrollment, axis=1)
+    totalEnrollment = (
+        dfTd.groupby("INSTRUCTOR")["WEIGHTED ENROLL TOTAL"].sum().reset_index()
+    )
     # Sort data for better visualization (optional)
-    total_enrollment = total_enrollment.sort_values(by='WEIGHTED ENROLL TOTAL', ascending=False)
-    fig = go.Figure(go.Bar(
-            x=total_enrollment['WEIGHTED ENROLL TOTAL'],
-            y=total_enrollment['INSTRUCTOR'],
-            orientation='h',
-            marker_color='teal'
-        ))
+    totalEnrollment = totalEnrollment.sort_values(
+        by="WEIGHTED ENROLL TOTAL", ascending=False
+    )
+    fig = go.Figure(
+        go.Bar(
+            x=totalEnrollment["WEIGHTED ENROLL TOTAL"],
+            y=totalEnrollment["INSTRUCTOR"],
+            orientation="h",
+            marker_color="teal",
+        )
+    )
     fig.update_layout(
-        title='Total Weighted Enrollment per Instructor',
-        xaxis_title='Total Weighted Enrollment (courses, not SCH)',
-        yaxis_title='Instructor',
+        title="Total Weighted Enrollment per Instructor",
+        xaxis_title="Total Weighted Enrollment (courses, not SCH)",
+        yaxis_title="Instructor",
     )
     st.plotly_chart(fig)
 
-def plot_enrollments_by_course_level(df):
+
+def plotEnrollmentsByCourseLevel(df):
     for level in range(0, 500, 100):
         this_level = str(level + 100)
-        df_level = df[(df['CATALOG NUMBER'] >= this_level) & (df['CATALOG NUMBER'] < str(level + 200))]
+        df_level = df[
+            (df["CATALOG NUMBER"] >= this_level)
+            & (df["CATALOG NUMBER"] < str(level + 200))
+        ]
 
         if len(df_level) == 0:
             break
 
-        course_enrollment = df_level.groupby('FQ_CATALOG_NUMBER')['WEIGHTED ENROLL TOTAL'].sum().reset_index()
-        course_enrollment = course_enrollment.sort_values(by='WEIGHTED ENROLL TOTAL', ascending=False)
+        courseEnrollment = (
+            df_level.groupby("FQ_CATALOG_NUMBER")["WEIGHTED ENROLL TOTAL"]
+            .sum()
+            .reset_index()
+        )
+        courseEnrollment = courseEnrollment.sort_values(
+            by="WEIGHTED ENROLL TOTAL", ascending=False
+        )
 
-        # Plotting with Plotly
         fig = go.Figure()
 
-        # Normalize the Weighted Enrollment to map to the colormap
-        norm = mcolors.Normalize(vmin=course_enrollment['WEIGHTED ENROLL TOTAL'].min(), vmax=course_enrollment['WEIGHTED ENROLL TOTAL'].max())
-        colors = [plt.cm.viridis(norm(val)) for val in course_enrollment['WEIGHTED ENROLL TOTAL']]
+        # fix colors
+        norm = mcolors.Normalize(
+            vmin=courseEnrollment["WEIGHTED ENROLL TOTAL"].min(),
+            vmax=courseEnrollment["WEIGHTED ENROLL TOTAL"].max(),
+        )
+        colors = [
+            plt.cm.viridis(norm(val))
+            for val in courseEnrollment["WEIGHTED ENROLL TOTAL"]
+        ]
 
-        fig.add_trace(go.Bar(
-            x=course_enrollment['WEIGHTED ENROLL TOTAL'],
-            y=course_enrollment['FQ_CATALOG_NUMBER'],
-            orientation='h',
-            marker=dict(color=colors),
-        ))
+        fig.add_trace(
+            go.Bar(
+                x=courseEnrollment["WEIGHTED ENROLL TOTAL"],
+                y=courseEnrollment["FQ_CATALOG_NUMBER"],
+                orientation="h",
+                marker=dict(color=colors),
+            )
+        )
 
-        # Calculate and plot the average weighted enrollment
-        average_enrollment = course_enrollment['WEIGHTED ENROLL TOTAL'].mean()
+        averageEnrollment = courseEnrollment["WEIGHTED ENROLL TOTAL"].mean()
         fig.add_shape(
             type="line",
-            x0=average_enrollment, y0=course_enrollment['FQ_CATALOG_NUMBER'].iloc[0],
-            x1=average_enrollment, y1=course_enrollment['FQ_CATALOG_NUMBER'].iloc[-1],
+            x0=averageEnrollment,
+            y0=courseEnrollment["FQ_CATALOG_NUMBER"].iloc[0],
+            x1=averageEnrollment,
+            y1=courseEnrollment["FQ_CATALOG_NUMBER"].iloc[-1],
             line=dict(color="red", width=2, dash="dash"),
         )
 
         fig.update_layout(
-            title=f'Enrollment at {this_level}-level',
-            xaxis_title='Enrollment',
-            yaxis_title='Course',
-            legend_title='Legend',
+            title=f"Enrollment at {this_level}-level",
+            xaxis_title="Enrollment",
+            yaxis_title="Course",
+            legend_title="Legend",
         )
 
         st.plotly_chart(fig)
 
+
 def main() -> None:
     st.title("Excel File Uploader")
-    uploaded_file: UploadedFile = st.file_uploader("Choose an Excel file", type=["xlsx"])
+    uploaded_file: UploadedFile = st.file_uploader(
+        "Choose an Excel file", type=["xlsx"]
+    )
 
     if uploaded_file is not None:
         df = pd.read_excel(io=uploaded_file)
@@ -390,9 +436,7 @@ def main() -> None:
         table = "schedule"
         df.to_sql(table, conn, if_exists="replace", index=False)
 
-        if st.button("Show Course Schedule"):
-            df2 = scheduleReport(":memory:", df)
-            FILTER_FIELDS = [
+        FILTER_FIELDS = [
             "FQ_CLASS_SECTION",
             "CLASS TITLE",
             "INSTRUCTOR",
@@ -405,73 +449,49 @@ def main() -> None:
             "CLASS END TIME",
             "FACILITY",
             "COMBINED_ID",
-            ]
-            df3 = df2[FILTER_FIELDS]
-            st.dataframe(df3)
+        ]
+
+        if st.button("Show Course Schedule"):
+            resultDf: pd.DataFrame = scheduleReport(":memory:", df)
+            courseScheduleDf: pd.DataFrame = resultDf[FILTER_FIELDS]
+            st.dataframe(courseScheduleDf)
 
         if st.button("Schedule Density"):
             plotDensity(":memory:", df)
 
-        
         if st.button("Enrollment Health"):
-            enrollment_health(df)
+            enrollmentHealth(df)
 
-
-        #Instructor Assignments
         if st.button("Instructor Assignments"):
-            df2 = scheduleReport(":memory:", df)
-            FILTER_FIELDS = [
-            "FQ_CLASS_SECTION",
-            "CLASS TITLE",
-            "INSTRUCTOR",
-            "ENROLL TOTAL",
-            "TRAD MEETING PATTERN",
-            "INSTRUCTIONAL TIME",
-            "MEETING PATTERN",
-            "UNIT CLASS DURATION",
-            "CLASS START TIME",
-            "CLASS END TIME",
-            "FACILITY",
-            "COMBINED_ID",
-            ]
-            df3 = df2[FILTER_FIELDS]
-            instructor_assignments(df3)
+            resultDf = scheduleReport(":memory:", df)
+            instructorAssignmentsDf: pd.DataFrame = resultDf[FILTER_FIELDS]
+            instructorAssignments(instructorAssignmentsDf)
 
         if st.button("Number of Assignments per Faculty"):
-            df2 = scheduleReport(":memory:", df)
-            FILTER_FIELDS = [
-            "FQ_CLASS_SECTION",
-            "CLASS TITLE",
-            "INSTRUCTOR",
-            "ENROLL TOTAL",
-            "TRAD MEETING PATTERN",
-            "INSTRUCTIONAL TIME",
-            "MEETING PATTERN",
-            "UNIT CLASS DURATION",
-            "CLASS START TIME",
-            "CLASS END TIME",
-            "FACILITY",
-            "COMBINED_ID",
-            ]
-            df3 = df2[FILTER_FIELDS]
-            assignments = instructor_assignments(df3)
-            plot_assignments_per_faculty(assignments)
-        
-        #to implement
-        #if st.button("Show by Course Number"):
-            
+            resultDf: pd.DataFrame = scheduleReport(":memory:", df)
+            numAssignmentsDf: pd.DataFrame = resultDf[FILTER_FIELDS]
+            assignments = instructorAssignments(numAssignmentsDf)
+            plotAssignmentsPerFaculty(assignments)
+
+        if st.button("Number of Assignments per Faculty by Course Number"):
+            resultDf: pd.DataFrame = scheduleReport(":memory:", df)
+            combinedGroups = resultDf.groupby("FQ_CATALOG_NUMBER")
+            for name, group in combinedGroups:
+                st.markdown(f"### {name}")
+                st.write(group[FILTER_FIELDS])
+                st.markdown("---")
+
         if st.button("Teaching Distribution by Weighted Enrollment"):
             teachingDistr(df)
-        
+
+        #work on graph coloring
         if st.button("Enrollments by Course Level"):
-            df2 = scheduleReport(":memory:", df)
-            df2['WEIGHTED ENROLL TOTAL'] = df2.apply(weighted_enrollment, axis=1)
-            plot_enrollments_by_course_level(df2)
+            resultDf: pd.DataFrame = scheduleReport(":memory:", df)
+            resultDf["WEIGHTED ENROLL TOTAL"] = resultDf.apply(
+                weightedEnrollment, axis=1
+            )
+            plotEnrollmentsByCourseLevel(resultDf)
 
-
-
-
-        
 
 if __name__ == "__main__":
     main()
