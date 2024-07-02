@@ -1,6 +1,8 @@
 from sqlite3 import Connection
 
 import streamlit
+from pandas import DataFrame
+from plotly.graph_objects import Figure
 from streamlit.delta_generator import DeltaGenerator
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
@@ -14,6 +16,12 @@ def initalState() -> None:
 
     if "showAnalyticButtons" not in streamlit.session_state:
         streamlit.session_state["showAnalyticButtons"] = False
+
+    if "df" not in streamlit.session_state:
+        streamlit.session_state["df"] = None
+
+    if "fig" not in streamlit.session_state:
+        streamlit.session_state["fig"] = None
 
 
 def main() -> None:
@@ -97,6 +105,22 @@ def main() -> None:
             streamlit.button(
                 label="In Trouble Courses",
                 help="Hello world",
+                use_container_width=True,
+            )
+
+        streamlit.divider()
+
+        if streamlit.session_state["df"] is not None:
+            df: DataFrame = streamlit.session_state["df"]
+            streamlit.dataframe(
+                data=df,
+                use_container_width=True,
+            )
+
+        if streamlit.session_state["fig"] is not None:
+            fig: Figure = streamlit.session_state["fig"]
+            streamlit.plotly_chart(
+                figure_or_data=fig,
                 use_container_width=True,
             )
 

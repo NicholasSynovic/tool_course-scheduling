@@ -162,8 +162,7 @@ class ScheduleDensity:
             )
 
         fig.update_layout(
-            title=f"Schedule Density <br><sup>Overlap Interval = \
-                {overlapThreshold}</sup>",
+            title=f"Schedule Density <br><sup>Overlap Interval = {overlapThreshold}</sup>",  # noqa: E501
             xaxis=dict(
                 tickvals=[datetimeToMinutes(dt=t) for t in times][
                     ::12
@@ -182,6 +181,9 @@ class ScheduleDensity:
         return fig
 
     def run(self) -> None:
+        streamlit.session_state["df"] = None
+        streamlit.session_state["fig"] = None
+
         df: DataFrame = self.runQuery()
 
         dayIntervalTrees: dict[str, IntervalTree] = self.computeIntervalTrees(
@@ -190,8 +192,5 @@ class ScheduleDensity:
 
         fig: Figure = self.generatePlot(its=dayIntervalTrees)
 
-        streamlit.dataframe(data=df)
-        streamlit.plotly_chart(
-            figure_or_data=fig,
-            use_container_width=True,
-        )
+        streamlit.session_state["df"] = df
+        streamlit.session_state["fig"] = fig
