@@ -1,7 +1,6 @@
 from sqlite3 import Connection
 
 import streamlit
-from pandas import DataFrame
 from streamlit.delta_generator import DeltaGenerator
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 

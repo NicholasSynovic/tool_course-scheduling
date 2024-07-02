@@ -10,7 +10,8 @@ from proj.utils import datetimeToMinutes
 
 def _computeInstructionalTime(row: Series):
     # TODO: Implement this.
-    # Instructional time is computed as the sum of UNIT CLASS DURATION per day that the class is taught
+    # Instructional time is computed as the sum of UNIT CLASS DURATION per day
+    # that the class is taught
     return 0
 
 
