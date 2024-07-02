@@ -5,7 +5,8 @@ from pandas import DataFrame
 from streamlit.delta_generator import DeltaGenerator
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
-from proj.excel2db import readExcel, toSQLiteDB
+from proj.analytics.scheduleDensity import ScheduleDensity
+from proj.excel2db import readExcelToDB
 
 
 def initalState() -> None:
@@ -27,8 +28,7 @@ def main() -> None:
     )
 
     if excelFile is not None:
-        df: DataFrame = readExcel(uf=excelFile)
-        conn: Connection = toSQLiteDB(df=df)
+        conn: Connection = readExcelToDB(uf=excelFile)
         streamlit.session_state["dbConn"] = conn
         streamlit.session_state["showAnalyticButtons"] = True
     else:
@@ -59,6 +59,9 @@ def main() -> None:
                 label="Schedule Density",
                 help="Hello world",
                 use_container_width=True,
+                on_click=ScheduleDensity(
+                    conn=streamlit.session_state["dbConn"]
+                ).run,
             )
             streamlit.button(
                 label="Course Enrollment Health",

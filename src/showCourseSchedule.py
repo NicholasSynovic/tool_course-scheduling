@@ -39,9 +39,8 @@ def filterCourses(conn: Connection, department: str = "COMP") -> DataFrame:
         ],
     )
 
-    sqlQuery: str = (
-        """
-    SELECT
+    sqlQuery: str = (  # nosec
+        """SELECT
         SUBJECT,
         CATALOG_NUMBER,
         SUBJECT || "-" || CATALOG_NUMBER as FQ_CATALOG_NUMBER,

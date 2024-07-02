@@ -1,259 +1,201 @@
+from datetime import datetime
 from sqlite3 import Connection
+from typing import List
 
-import pandas as pd
-import plotly.graph_objects as go
-import streamlit as st
+import pandas
+import streamlit
 from intervaltree import Interval, IntervalTree
-from pandas import DataFrame
-from streamlit.runtime.uploaded_file_manager import UploadedFile
+from pandas import DataFrame, Series
+from plotly import graph_objects
+from plotly.graph_objects import Figure
 
-DEPARTMENT_FILTER: dict[str, str] = {
-    "COMP": """SUBJECT = 'COMP' and "CATALOG NUMBER" not in ('391', '398', '490', '499', '605') and "CATALOG NUMBER" not in ('215', '231', '331', '431', '381', '386', '383', '483') and "SECTION" not in ('01L', '02L', '03L', '04L', '05L', '06L', '700N')"""
-}
-
-
-def runQuery(
-    conn: Connection, departmentFilters: dict[str, str] = DEPARTMENT_FILTER
-) -> DataFrame:
-    whereClasues: str = "WHERE " + " or ".join(
-        ["(" + departmentFilters[filter] + ")" for filter in departmentFilters]
-    )
-
-    query = (  # nosec
-        """SELECT SUBJECT, "CATALOG NUMBER", SUBJECT || "-" || "CATALOG NUMBER" as FQ_CATALOG_NUMBER, "CATALOG NUMBER" || '-' || SECTION as FQ_CLASS_SECTION, "CLASS TITLE", INSTRUCTOR, "ENROLL TOTAL", "MEETING PATTERN", "CLASS START TIME", "CLASS END TIME", FACILITY, '(' || INSTRUCTOR || ',' || FACILITY || ',' || "MEETING PATTERN" || ',' ||"CLASS START TIME"whereClasues || ',' || "CLASS END TIME" || ')' as COMBINED_ID FROM schedule """
-        + whereClasues
-    )
-
-    query = query.strip()
-    print(query)
+from proj.utils import datetimeToMinutes
 
 
-runQuery(Connection(database=":memory:"))
+class ScheduleDensity:
+    def __init__(self, conn: Connection) -> None:
+        self.conn: Connection = conn
 
-# def plotDensity(dbPath, df):
-#     df = pd.read_sql_query(query, conn)
-#     conn.close()
+        self.departmentFilters: dict[str, str] = {
+            "COMP": """SUBJECT = 'COMP'
+            AND "CATALOG NUMBER" NOT IN
+                ('391', '398', '490', '499', '605')
+            AND "CATALOG NUMBER" NOT IN
+                ('215', '231', '331', '431', '381', '386', '383', '483')
+            AND SECTION NOT IN
+                ('01L', '02L', '03L', '04L', '05L', '06L', '700N')"""
+        }
 
-#     pd.options.display.max_rows = 999
+    def runQuery(self) -> DataFrame:
+        whereClasues: str = "WHERE " + " or ".join(
+            [
+                "(" + self.departmentFilters[filter] + ")"
+                for filter in self.departmentFilters
+            ]
+        )
 
-#     df2 = df.drop_duplicates(subset=["FQ_CLASS_SECTION"])
+        query: str = (
+            """SELECT SUBJECT, "CATALOG NUMBER", SUBJECT || '-' || "CATALOG NUMBER" as FQ_CATALOG_NUMBER, "CATALOG NUMBER" || '-' || SECTION as FQ_CLASS_SECTION, "CLASS TITLE", INSTRUCTOR, "ENROLL TOTAL", "TRAD MEETING PATTERN", "CLASS START TIME", "CLASS END TIME", "UNIT CLASS DURATION", "INSTRUCTIONAL TIME", FACILITY, '(' || INSTRUCTOR || ',' || FACILITY || ',' || "MEETING PATTERN" || ',' || "CLASS START TIME" || ',' || "CLASS END TIME" || ')' as COMBINED_ID FROM schedule """
+            + whereClasues
+            + ";"
+        ).strip()
 
-#     df2 = df2.copy()
+        df: DataFrame = pandas.read_sql_query(
+            sql=query,
+            con=self.conn,
+        )
 
-#     unknown_instructor_name = "Turing, Alan"  # This has long been our "default" for unassigned courses. I don't expect anyone with this name to be on faculty.
-#     df2["INSTRUCTOR"].fillna(unknown_instructor_name)
+        df.drop_duplicates(
+            subset=["FQ_CLASS_SECTION"],
+            inplace=True,
+            ignore_index=True,
+        )
 
-#     unknown_combined_id = "(Doyle Center, No Start Time, No End Time)"
-#     df2["COMBINED_ID"].fillna(unknown_combined_id)
+        df["COMBINED_ID"] = df["COMBINED_ID"].fillna(
+            value="(UNKNOWN, N/A, N/A)",
+        )
 
-#     def traditional_meeting_pattern(row):
-#         meeting_pattern = row["MEETING PATTERN"]
-#         if meeting_pattern:
-#             return (
-#                 meeting_pattern.replace("TR", "R")
-#                 .replace("SA", "S")
-#                 .replace("SU", "X")
-#             )  # Remove all 2-letter codes and follow MTWRFSX format.
-#         else:
-#             return ""
+        df = df[df["ENROLL TOTAL"] >= 0]
 
-#     def time_to_minutes(t):
-#         return t.hour * 60 + t.minute
+        return df
 
-#     def unit_class_duration(row):
-#         start = row["CLASS START TIME"]
-#         end = row["CLASS END TIME"]
+    def computeIntervalTrees(
+        self,
+        df: DataFrame,
+    ) -> dict[str, IntervalTree]:
+        dayIntervalTree: dict[str, IntervalTree] = {
+            day: IntervalTree()
+            for day in [
+                "M",
+                "T",
+                "W",
+                "R",
+                "F",
+                "S",
+            ]
+        }
 
-#         if not start or not end:
-#             return 0
-#         start_time = datetime.strptime(start, "%H:%M:%S")
-#         end_time = datetime.strptime(end, "%H:%M:%S")
-#         start_minutes = time_to_minutes(start_time)
-#         end_minutes = time_to_minutes(end_time)
-#         total_minutes = end_minutes - start_minutes
-#         return total_minutes
+        row: Series
+        for _, row in df.iterrows():
+            pattern: str = row["TRAD MEETING PATTERN"]
 
-#     def instructional_time(row):
-#         meeting_pattern = row["TRAD MEETING PATTERN"]
-#         return len(meeting_pattern) * row["UNIT CLASS DURATION"]
+            startTime: datetime = pandas.to_datetime(
+                arg=row["CLASS START TIME"],
+                format="%H:%M:%S",
+            )
+            endTime: datetime = pandas.to_datetime(
+                arg=row["CLASS END TIME"],
+                format="%H:%M:%S",
+            )
 
-#     # df2 = df2.copy()
-#     # Really bad LOCUS thing: M,T,W,TR,F,SA
-#     # I'm using M,T,W,T,F. If we ever use SU it would become X to denote why we shouldn't do it.
+            if startTime == endTime:
+                continue
 
-#     df2["TRAD MEETING PATTERN"] = df2.apply(
-#         traditional_meeting_pattern, axis=1
-#     )
+            startMinutes: int = datetimeToMinutes(dt=startTime)
+            endMinutes: int = datetimeToMinutes(dt=endTime)
 
-#     # A bit of data cleansing just to remove the unwanted time information from the Excel to SQLLite3 conversion.
+            day: str
+            for day in pattern:
+                interval: Interval = Interval(
+                    begin=startMinutes,
+                    end=endMinutes,
+                )
 
-#     df2["CLASS START TIME"] = df["CLASS START TIME"].str.split(" ").str[1]
-#     df2["CLASS END TIME"] = df["CLASS END TIME"].str.split(" ").str[1]
-#     df2["COMBINED_ID"] = df["COMBINED_ID"].str.replace("1900-01-01", "")
+                dayIntervalTree[day].add(interval)
 
-#     df2["UNIT CLASS DURATION"] = df2.apply(unit_class_duration, axis=1)
-#     df2["INSTRUCTIONAL TIME"] = df2.apply(instructional_time, axis=1)
+        return dayIntervalTree
 
-#     # key_fields_of_interest = ['SUBJECT','CATALOG_NUMBER','FQ_CATALOG_NUMBER','FQ_CLASS_SECTION', 'CLASS TITLE', 'INSTRUCTOR', 'ENROLL TOTAL', 'MEETING_PATTERN','CLASS_START_TIME','CLASS_END_TIME', 'FACILITY','COMBINED_ID']
-#     FILTER_FIELDS = [
-#         "FQ_CLASS_SECTION",
-#         "CLASS TITLE",
-#         "INSTRUCTOR",
-#         "ENROLL TOTAL",
-#         "TRAD MEETING PATTERN",
-#         "INSTRUCTIONAL TIME",
-#         "MEETING PATTERN",
-#         "UNIT CLASS DURATION",
-#         "CLASS START TIME",
-#         "CLASS END TIME",
-#         "FACILITY",
-#         "COMBINED_ID",
-#     ]
+    def generatePlot(
+        self,
+        its: dict[str, IntervalTree],
+        overlapThreshold: int = 2,
+    ) -> Figure:
+        days: List[str] = ["M", "T", "W", "R", "F", "S"]
+        days.reverse()
 
-#     # Now 'df' holds the contents of 'your_table' as a Pandas DataFrame
-#     # Filter out any sectinos with 0. If enrollment is 0, likely to be cancelled anyway.
-#     group = df2[df2["ENROLL TOTAL"] >= 0]
+        times: List[datetime] = [
+            datetime(2023, 1, 1, hour, minute)
+            for hour in range(8, 19)
+            for minute in range(0, 60, 5)
+        ]
 
-#     df2 = group
-#     print(df2[FILTER_FIELDS])
+        timeLabels: List[str] = [t.strftime("%H:%M") for t in times]
 
-#     schedule_df = group
+        markers: List[dict[str, str | int]] = []
 
-#     def time_to_minutes(t):
-#         return t.hour * 60 + t.minute
+        day: str
+        time: datetime
+        for day in days:
+            for time in times:
+                color: str = "green"
 
-#     # One of the most important data structures (hope we're teaching it)
-#     def create_interval_trees(schedule):
-#         day_trees = {
-#             day: IntervalTree() for day in ["M", "T", "W", "R", "F", "S"]
-#         }
-#         # print(day_trees)
-#         for index, row in schedule_df.iterrows():
-#             pattern = row["TRAD MEETING PATTERN"]
-#             start = row["CLASS START TIME"]
-#             end = row["CLASS END TIME"]
-#             if start == end:
-#                 continue
-#             start_time = datetime.strptime(start, "%H:%M:%S")
-#             end_time = datetime.strptime(end, "%H:%M:%S")
-#             start_minutes = time_to_minutes(start_time)
-#             end_minutes = time_to_minutes(end_time)
-#             total_minutes = 0
-#             for day in pattern:  # e.g. ('M', 'W', 'F') iterates as 'M','W','F'
-#                 interval = Interval(start_minutes, end_minutes)
-#                 try:
-#                     day_trees[day].add(interval)
-#                     total_minutes += end_minutes - start_minutes
-#                 except:
-#                     print(interval, start_time, end_time, pattern)
-#             if (
-#                 total_minutes != 150
-#             ):  # TODO: We need # credits to know the correct answer but this catches MOST
-#                 print(
-#                     "Checking for duraton != 150 minutes (possibly ok): ",
-#                     row["FQ_CLASS_SECTION"],
-#                     row["TRAD MEETING PATTERN"],
-#                     row["CLASS START TIME"],
-#                     row["CLASS END TIME"],
-#                 )
-#         return day_trees
+                minutes: int = datetimeToMinutes(dt=time)
+                overlaps: set[Interval] = its[day][minutes]
 
-#     # Assume create_interval_trees and time_to_minutes are defined elsewhere
+                overlapCount: int = len(overlaps)
 
-#     def plot_schedule_with_overlap(schedule, overlap_threshold=2):
-#         days = ["M", "T", "W", "R", "F", "S"]
-#         days.reverse()  # For more natural appearance on the chart.
-#         times = [
-#             datetime(2023, 1, 1, hour, minute)
-#             for hour in range(8, 19)
-#             for minute in range(0, 60, 5)
-#         ]  # todo remove hard-coding of year/1/1 (safe though)
-#         time_labels = [t.strftime("%H:%M") for t in times]
-#         day_trees = create_interval_trees(schedule)
+                if overlapCount >= overlapThreshold:
+                    color = "red"
 
-#         max_overlap = 0
-#         markers = []
+                elif overlaps:
+                    color = "orange"
 
-#         for day_index, day in enumerate(days):
-#             for t in times:
-#                 minutes = time_to_minutes(t)
-#                 overlaps = day_trees[day][minutes]
-#                 color = "green"
-#                 if len(overlaps) >= overlap_threshold:
-#                     color = "red"
-#                 elif overlaps:
-#                     color = "orange"
-#                 if len(overlaps) > max_overlap:
-#                     max_overlap = len(overlaps)
-#                 size = 5 + 4 * len(
-#                     overlaps
-#                 )  # Base size + additional size for each overlap
+                size = 5 + 4 * overlapCount
 
-#                 markers.append(
-#                     {
-#                         "x": minutes,
-#                         "y": day_index,
-#                         "color": color,
-#                         "size": size,
-#                         "overlaps": len(overlaps),
-#                     }
-#                 )
+                markers.append(
+                    {
+                        "x": minutes,
+                        "y": days.index(day),
+                        "color": color,
+                        "size": size,
+                        "overlaps": overlapCount,
+                    }
+                )
 
-#         fig = go.Figure()
+        fig: Figure = Figure()
 
-#         for marker in markers:
-#             fig.add_trace(
-#                 go.Scatter(
-#                     x=[marker["x"]],
-#                     y=[marker["y"]],
-#                     mode="markers",
-#                     marker=dict(color=marker["color"], size=marker["size"]),
-#                     text=f"Overlaps: {marker['overlaps']}",
-#                 )
-#             )
+        marker: dict[str, str | int]
+        for marker in markers:
+            fig.add_trace(
+                graph_objects.Scatter(
+                    x=[marker["x"]],
+                    y=[marker["y"]],
+                    mode="markers",
+                    marker=dict(color=marker["color"], size=marker["size"]),
+                    text=f"Overlaps: {marker['overlaps']}",
+                )
+            )
 
-#         fig.update_layout(
-#             title=f"Schedule Density [Maximum course overlap in any interval = {max_overlap}]",
-#             xaxis=dict(
-#                 tickvals=[time_to_minutes(t) for t in times][
-#                     ::12
-#                 ],  # Every hour
-#                 ticktext=time_labels[::12],
-#                 title="Time",
-#             ),
-#             yaxis=dict(
-#                 tickvals=list(range(len(days))),
-#                 ticktext=days,
-#                 title="Day of the Week",
-#             ),
-#             showlegend=False,
-#         )
+        fig.update_layout(
+            title=f"Schedule Density <br><sup>Overlap Interval = {overlapThreshold}</sup>",
+            xaxis=dict(
+                tickvals=[datetimeToMinutes(dt=t) for t in times][
+                    ::12
+                ],  # Every hour
+                ticktext=timeLabels[::12],
+                title="Time",
+            ),
+            yaxis=dict(
+                tickvals=list(range(len(days))),
+                ticktext=days,
+                title="Day of the Week",
+            ),
+            showlegend=False,
+        )
 
-#         fig.show()
+        return fig
 
-#     # Plot the schedule with varying marker size based on overlap
-#     plot_schedule_with_overlap(schedule_df)
+    def run(self) -> None:
+        df: DataFrame = self.runQuery()
 
-#     conn.close()
+        dayIntervalTrees: dict[str, IntervalTree] = self.computeIntervalTrees(
+            df=df,
+        )
 
+        fig: Figure = self.generatePlot(its=dayIntervalTrees)
 
-# # runs if file has been uploaded
-# if uploaded_file is not None:
-#     # saves file to backend
-#     # save_path = os.path.join("src/", "excelcoursedb.xlsx")
-#     # with open(save_path, "wb") as f:
-#     #     f.write(uploaded_file.getbuffer())
-#     df = pd.read_excel(io=uploaded_file)
-
-#     # converts excel to .db file (and saves?)
-#     conn = sqlite3.connect(database=":memory:")
-
-#     table = "schedule"
-#     df.to_sql(table, conn, if_exists="replace", index=False)
-#     # Plots Schedule Density
-
-#     depts = ["COMP"]
-
-#     # button
-#     if st.button("Schedule Density"):
-#         plotDensity("coursedb.db", df)
+        streamlit.dataframe(data=df)
+        streamlit.plotly_chart(
+            figure_or_data=fig,
+            use_container_width=True,
+        )
