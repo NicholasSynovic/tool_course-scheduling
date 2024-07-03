@@ -7,6 +7,7 @@ from streamlit.delta_generator import DeltaGenerator
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 from proj.analytics.assignmentsPerFaculty import AssignmentsPerFaculty
+from proj.analytics.courseEnrollmentHealth import CourseEnrollmentHealth
 from proj.analytics.courseSchedule import CourseSchedule
 from proj.analytics.onlineCourseSchedule import OnlineCourseSchedule
 from proj.analytics.scheduleDensity import ScheduleDensity
@@ -68,6 +69,9 @@ def main() -> None:
             streamlit.button(
                 label="Course Enrollment Health",
                 use_container_width=True,
+                on_click=CourseEnrollmentHealth(
+                    conn=streamlit.session_state["dbConn"]
+                ).run,
             )
             streamlit.button(
                 label="Instructor Assignments",

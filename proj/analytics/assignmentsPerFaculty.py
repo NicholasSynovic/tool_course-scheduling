@@ -150,10 +150,6 @@ class AssignmentsPerFaculty:
         return fig
 
     def run(self) -> None:
-        clearContent()
-
-        dfs: List[DataFrame] = [self.compute()]
-        figs: List[Figure] = [self.plot(df=df) for df in dfs]
         """
         Run the workflow to compute and plot assignments per instructor.
 
@@ -178,6 +174,11 @@ class AssignmentsPerFaculty:
         >>> example_instance.run()
         [Runs the workflow to compute and plot assignments per instructor]
         """  # noqa: E501
+
+        clearContent()
+
+        dfs: List[DataFrame] = [self.compute()]
+        figs: List[Figure] = [self.plot(df=df) for df in dfs]
 
         streamlit.session_state["analyticTitle"] = (
             "Number of Assignments Per Faculty Member"
