@@ -10,6 +10,7 @@ from proj.analytics.assignmentsPerFaculty import AssignmentsPerFaculty
 from proj.analytics.courseEnrollmentHealth import CourseEnrollmentHealth
 from proj.analytics.courseSchedule import CourseSchedule
 from proj.analytics.instructorAssignments import InstructorAssignments
+from proj.analytics.inTroubleCourses import InTroubleCourses
 from proj.analytics.onlineCourseSchedule import OnlineCourseSchedule
 from proj.analytics.scheduleDensity import ScheduleDensity
 from proj.analytics.showCoursesByNumber import ShowCoursesByNumber
@@ -108,6 +109,9 @@ def main() -> None:
             streamlit.button(
                 label="In Trouble Courses",
                 use_container_width=True,
+                on_click=InTroubleCourses(
+                    conn=streamlit.session_state["dbConn"],
+                ).run,
             )
 
         streamlit.divider()
