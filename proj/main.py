@@ -17,16 +17,6 @@ from proj.utils import initialState, resetState
 
 def main() -> None:
     initialState()
-    """
-    Main function for the CS Dept. Course Scheduler Utility.
-
-    Initializes the state, handles file upload of a Locus Course Schedule Export (.xlsx) file,
-    processes the file to update the session state, and displays analytic buttons and visualizations.
-
-    Returns:
-    -------
-    None
-    """  # noqa: E501
 
     streamlit.title(body="CS Dept. Course Scheduler Utility")
 
@@ -149,6 +139,11 @@ def main() -> None:
                     streamlit.markdown(
                         body=f"### \
                         {streamlit.session_state['dfListTitles'].pop(0)}"
+                    )
+
+                if streamlit.session_state["dfListSubtitles"] is not None:
+                    streamlit.markdown(
+                        body=f"> {streamlit.session_state['dfListSubtitles'].pop(0)}"  # noqa: E501
                     )
 
                 streamlit.dataframe(

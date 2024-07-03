@@ -30,11 +30,14 @@ class ShowCoursesByNumber:
 
         dfList: List[DataFrame] = []
         dfListTitles: List[str] = []
+        dfListSubtitles: List[str] = []
 
         df: DataFrame
         for name, df in self.compute():
             dfList.append(df)
             dfListTitles.append(name)
+            dfListSubtitles.append(df["CLASS TITLE"].unique()[0])
 
         streamlit.session_state["dfList"] = dfList
         streamlit.session_state["dfListTitles"] = dfListTitles
+        streamlit.session_state["dfListSubtitles"] = dfListSubtitles

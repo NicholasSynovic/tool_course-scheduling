@@ -10,6 +10,7 @@ SESSION_STATE_KEYS: List[str] = [
     "analyticSubtitle",
     "dfList",
     "dfListTitles",
+    "dfListSubtitles",
     "figList",
     "figListTitles",
 ]
