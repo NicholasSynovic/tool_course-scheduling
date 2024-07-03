@@ -92,7 +92,7 @@ class AssignmentsPerFaculty:
 
         data: Series[int] = df["INSTRUCTOR"].value_counts(
             sort=True,
-            ascending=True,
+            ascending=False,
         )
 
         dataDF: DataFrame = data.reset_index()
@@ -142,7 +142,6 @@ class AssignmentsPerFaculty:
         )
 
         fig.update_layout(
-            yaxis={"categoryorder": "total ascending"},
             xaxis_title="Number of Courses",
             yaxis_title="Instructor Name",
         )
@@ -185,4 +184,9 @@ class AssignmentsPerFaculty:
                 for the current term"
         )
         streamlit.session_state["dfList"] = dfs
+        streamlit.session_state["dfListTitles"] = ["Faculty Assignment Count"]
+
         streamlit.session_state["figList"] = figs
+        streamlit.session_state["figListTitles"] = [
+            "Faculty Assignment Count Plot"
+        ]
