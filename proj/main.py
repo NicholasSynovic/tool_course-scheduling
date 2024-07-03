@@ -10,6 +10,7 @@ from proj.analytics.assignmentsPerFaculty import AssignmentsPerFaculty
 from proj.analytics.courseSchedule import CourseSchedule
 from proj.analytics.onlineCourseSchedule import OnlineCourseSchedule
 from proj.analytics.scheduleDensity import ScheduleDensity
+from proj.analytics.showCoursesByNumber import ShowCoursesByNumber
 from proj.excel2db import readExcelToDB
 from proj.utils import initialState, resetState
 
@@ -94,6 +95,9 @@ def main() -> None:
             streamlit.button(
                 label="Course by Number",
                 use_container_width=True,
+                on_click=ShowCoursesByNumber(
+                    conn=streamlit.session_state["dbConn"],
+                ).run,
             )
             streamlit.button(
                 label="Teaching Distribution by Weighted Enrollment",
