@@ -9,6 +9,7 @@ from streamlit.runtime.uploaded_file_manager import UploadedFile
 from proj.analytics.assignmentsPerFaculty import AssignmentsPerFaculty
 from proj.analytics.courseEnrollmentHealth import CourseEnrollmentHealth
 from proj.analytics.courseSchedule import CourseSchedule
+from proj.analytics.enrollmentByCourseLevel import EnrollmentByCourseLevel
 from proj.analytics.instructorAssignments import InstructorAssignments
 from proj.analytics.inTroubleCourses import InTroubleCourses
 from proj.analytics.onlineCourseSchedule import OnlineCourseSchedule
@@ -105,6 +106,9 @@ def main() -> None:
             streamlit.button(
                 label="Enrollments by Course Level",
                 use_container_width=True,
+                on_click=EnrollmentByCourseLevel(
+                    conn=streamlit.session_state["dbConn"],
+                ).run,
             )
             streamlit.button(
                 label="In Trouble Courses",
