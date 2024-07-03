@@ -121,7 +121,7 @@ def main() -> None:
 
         if streamlit.session_state["analyticSubtitle"] is not None:
             streamlit.markdown(
-                body=f">  {streamlit.session_state['analyticSubtitle']}"
+                body=f"> {streamlit.session_state['analyticSubtitle']}"
             )
 
         try:
