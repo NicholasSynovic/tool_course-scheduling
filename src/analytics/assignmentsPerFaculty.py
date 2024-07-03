@@ -8,87 +8,45 @@ from plotly.graph_objects import Figure
 
 from src.analytics.courseSchedule import CourseSchedule
 from src.utils import clearContent
+from src.utils.analytic import Analytic
 
 
-class AssignmentsPerFaculty:
+class AssignmentsPerFaculty(Analytic):
     """
     Class to compute and visualize assignments per faculty member.
 
-    Attributes
-    ----------
-    conn : Connection
-        A database connection object.
-
-    Methods
-    -------
-    __init__(conn: Connection) -> None:
-        Initialize the class with a database connection.
-
-    compute() -> pandas.DataFrame:
-        Compute and return a DataFrame with the number of courses taught by each instructor.
-
-    plot(df: pandas.DataFrame) -> plotly.graph_objs.Figure:
-        Plot a horizontal bar chart showing the number of courses taught by each instructor.
-
-    run() -> None:
-        Run the workflow to compute and plot assignments per instructor.
-    """  # noqa: E501
+    This class provides functionalities to compute the number of courses
+    assigned to each faculty member and visualize these assignments using
+    interactive plots. It leverages a database connection to fetch the required
+    data.
+    """
 
     def __init__(self, conn: Connection) -> None:
         """
-        Initialize the class with a database connection.
+        Initialize the AssignmentsPerFaculty class with a database connection.
 
-        Parameters
-        ----------
-        conn : Connection
-            A database connection object.
+        This constructor initializes the AssignmentsPerFaculty class, setting
+        up the database connection which will be used to compute and visualize
+        assignments per faculty member.
 
-        Returns
-        -------
-        None
-
-        Notes
-        -----
-        This constructor initializes the class instance with a provided database connection object.
-
-        Examples
-        --------
-        >>> import sqlite3
-        >>> conn = sqlite3.connect(":memory:")
-        >>> example_instance = MyClass(conn)
-        [Initializes an instance of MyClass with a database connection]
-        """  # noqa: E501
-
+        :param conn: A database connection object.
+        :type conn: Connection
+        """
         self.conn = conn
 
     def compute(self) -> DataFrame:
         """
-        Compute and return a DataFrame with the number of courses taught by each instructor.
+        Compute the number of courses taught by each instructor.
 
-        Parameters
-        ----------
-        None
+        This method fetches the course schedule from the database, calculates
+        the number of courses taught by each instructor, and returns this
+        information as a DataFrame. Instructors with the name "UNKNOWN" are
+        excluded from the final DataFrame.
 
-        Returns
-        -------
-        pandas.DataFrame
-            A DataFrame containing the count of courses taught by each instructor.
-
-        Notes
-        -----
-        This method performs the following steps:
-        1. Retrieves course schedule data using the `get` method from the `CourseSchedule` class and assigns it to `df`.
-        2. Counts the occurrences of each unique instructor in the 'INSTRUCTOR' column of `df`.
-        3. Creates a new DataFrame `dataDF` from the counted series, renaming columns to 'Instructor Name' and 'Number of Courses'.
-        4. Filters out rows where the 'Instructor Name' is 'UNKNOWN'.
-        5. Returns the filtered DataFrame.
-
-        Examples
-        --------
-        >>> example_instance.compute()
-        [Returns a DataFrame with the number of courses taught by each instructor]
-        """  # noqa: E501
-
+        :return: A DataFrame containing the number of courses taught by each
+            instructor.
+        :rtype: DataFrame
+        """
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
         data: Series[int] = df["INSTRUCTOR"].value_counts(
@@ -103,34 +61,21 @@ class AssignmentsPerFaculty:
 
     def plot(self, df: DataFrame) -> Figure:
         """
-        Plot a horizontal bar chart showing the number of courses taught by each instructor.
+        Plot a horizontal bar chart showing the number of courses taught by
+        each instructor.
 
-        Parameters
-        ----------
-        df : pandas.DataFrame
-            A DataFrame containing data with columns 'Instructor Name' and 'Number of Courses'.
+        This method creates a Plotly figure that displays a horizontal bar
+        chart, with the number of courses on the x-axis and instructor names on
+        the y-axis. The chart provides a visual representation of the number of
+        assignments per instructor.
 
-        Returns
-        -------
-        plotly.graph_objs.Figure
-            A Plotly figure object representing the horizontal bar chart.
-
-        Notes
-        -----
-        This method uses Plotly Express to generate a horizontal bar chart with the following settings:
-        - 'Instructor Name' on the y-axis and 'Number of Courses' on the x-axis.
-        - The chart title is set to "Number of Assignments per Instructor".
-        - Axes labels are customized to "Instructor Name" and "Number of Courses".
-        - The y-axis category order is set to ascending based on the total number of courses.
-
-        Examples
-        --------
-        >>> df = example_instance.compute()
-        >>> fig = example_instance.plot(df)
-        [Generates and returns a Plotly figure showing the number of courses taught by each instructor]
-        """  # noqa: E501
-
-        fig = express.bar(
+        :param df: A DataFrame containing the number of courses taught by each
+            instructor.
+        :type df: pd.DataFrame
+        :return: A Plotly Figure object representing the horizontal bar chart.
+        :rtype: plotly.graph_objs.Figure
+        """
+        fig: Figure = express.bar(
             data_frame=df,
             y="Instructor Name",
             x="Number of Courses",
@@ -153,28 +98,12 @@ class AssignmentsPerFaculty:
         """
         Run the workflow to compute and plot assignments per instructor.
 
-        Parameters
-        ----------
-        None
+        This method clears any existing content, computes the number of courses
+        taught by each instructor, plots the results, and updates the Streamlit
+        session state with the resulting data and figures.
 
-        Returns
-        -------
-        None
-
-        Notes
-        -----
-        This method performs the following steps:
-        1. Initializes `streamlit.session_state['df']` and `streamlit.session_state['fig']` to None.
-        2. Computes the number of courses taught by each instructor using the `compute` method and assigns the result to `df`.
-        3. Generates a horizontal bar chart showing the number of courses per instructor using the `plot` method and assigns the figure to `fig`.
-        4. Stores the computed DataFrame `df` and the generated figure `fig` in `streamlit.session_state` for use in the Streamlit app.
-
-        Examples
-        --------
-        >>> example_instance.run()
-        [Runs the workflow to compute and plot assignments per instructor]
-        """  # noqa: E501
-
+        :return: None
+        """
         clearContent()
 
         dfs: List[DataFrame] = [self.compute()]
