@@ -3,7 +3,6 @@ from typing import List
 
 import streamlit
 from pandas import DataFrame
-
 from proj.analytics.courseSchedule import CourseSchedule
 from proj.utils import clearContent
 

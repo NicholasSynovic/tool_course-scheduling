@@ -5,7 +5,6 @@ import streamlit
 from pandas import DataFrame, Series
 from plotly import express
 from plotly.graph_objects import Figure
-
 from proj.analytics.courseSchedule import CourseSchedule
 from proj.utils import clearContent
 

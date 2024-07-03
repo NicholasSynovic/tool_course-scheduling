@@ -3,9 +3,6 @@ from sqlite3 import Connection
 import streamlit
 from pandas import DataFrame
 from plotly.graph_objects import Figure
-from streamlit.delta_generator import DeltaGenerator
-from streamlit.runtime.uploaded_file_manager import UploadedFile
-
 from proj.analytics.assignmentsPerFaculty import AssignmentsPerFaculty
 from proj.analytics.courseEnrollmentHealth import CourseEnrollmentHealth
 from proj.analytics.courseSchedule import CourseSchedule
@@ -20,6 +17,8 @@ from proj.analytics.teachingDistributionByWeightedEnrollment import (
 )
 from proj.excel2db import readExcelToDB
 from proj.utils import initialState, resetState
+from streamlit.delta_generator import DeltaGenerator
+from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 
 def main() -> None:
