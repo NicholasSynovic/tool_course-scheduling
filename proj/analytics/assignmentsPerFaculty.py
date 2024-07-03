@@ -1,4 +1,5 @@
 from sqlite3 import Connection
+from typing import List
 
 import streamlit
 from pandas import DataFrame, Series
@@ -47,10 +48,15 @@ class AssignmentsPerFaculty:
         return fig
 
     def run(self) -> None:
-        streamlit.session_state["df"] = None
-        streamlit.session_state["fig"] = None
+        dfs: List[DataFrame] = [self.compute()]
+        figs: List[Figure] = [self.plot(df=df) for df in dfs]
 
-        df: DataFrame = self.compute()
-        fig: Figure = self.plot(df=df)
-
-        streamlit.session_state["fig"] = fig
+        streamlit.session_state["analyticTitle"] = (
+            "Number of Assignments Per Faculty Member"
+        )
+        streamlit.session_state["analyticSubtitle"] = (
+            "The number of courses that are assigned to each faculty member \
+                for the current term"
+        )
+        streamlit.session_state["dfList"] = dfs
+        streamlit.session_state["figList"] = figs
