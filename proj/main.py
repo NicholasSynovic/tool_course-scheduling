@@ -7,6 +7,7 @@ from streamlit.delta_generator import DeltaGenerator
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 from proj.analytics.courseSchedule import CourseSchedule
+from proj.analytics.onlineCourseSchedule import OnlineCourseSchedule
 from proj.analytics.scheduleDensity import ScheduleDensity
 from proj.excel2db import readExcelToDB
 
@@ -65,6 +66,9 @@ def main() -> None:
                 label="Online Only Courses",
                 help="Hello world",
                 use_container_width=True,
+                on_click=OnlineCourseSchedule(
+                    conn=streamlit.session_state["dbConn"]
+                ).run,
             )
             streamlit.button(
                 label="Schedule Density",
