@@ -6,28 +6,16 @@ from plotly.graph_objects import Figure
 from streamlit.delta_generator import DeltaGenerator
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
+from proj.analytics.assignmentsPerFaculty import AssignmentsPerFaculty
 from proj.analytics.courseSchedule import CourseSchedule
 from proj.analytics.onlineCourseSchedule import OnlineCourseSchedule
 from proj.analytics.scheduleDensity import ScheduleDensity
 from proj.excel2db import readExcelToDB
-
-
-def initalState() -> None:
-    if "dbConn" not in streamlit.session_state:
-        streamlit.session_state["dbConn"] = None
-
-    if "showAnalyticButtons" not in streamlit.session_state:
-        streamlit.session_state["showAnalyticButtons"] = False
-
-    if "df" not in streamlit.session_state:
-        streamlit.session_state["df"] = None
-
-    if "fig" not in streamlit.session_state:
-        streamlit.session_state["fig"] = None
+from proj.utils import State
 
 
 def main() -> None:
-    initalState()
+    state: State = State()
 
     streamlit.title(body="CS Dept. Course Scheduler Utility")
 
@@ -39,12 +27,11 @@ def main() -> None:
 
     if excelFile is not None:
         conn: Connection = readExcelToDB(uf=excelFile)
-        streamlit.session_state["dbConn"] = conn
-        streamlit.session_state["showAnalyticButtons"] = True
+        state.update(dbConn=conn, showAnalyticButtons=True)
     else:
-        initalState()
+        state.reset(keepDBConnection=False, keepButtons=False)
 
-    if streamlit.session_state["showAnalyticButtons"]:
+    if state.data["showAnalyticButtons"]:
         column1: DeltaGenerator
         column2: DeltaGenerator
         column1, column2 = streamlit.columns(
@@ -56,27 +43,21 @@ def main() -> None:
         with column1:
             streamlit.button(
                 label="Show Course Schedule",
-                help="Hello world",
+                help="Show the current course schedule",
                 use_container_width=True,
-                on_click=CourseSchedule(
-                    conn=streamlit.session_state["dbConn"]
-                ).run,
+                on_click=CourseSchedule(conn=state.data["dbConn"]).run,
             )
             streamlit.button(
                 label="Online Only Courses",
                 help="Hello world",
                 use_container_width=True,
-                on_click=OnlineCourseSchedule(
-                    conn=streamlit.session_state["dbConn"]
-                ).run,
+                on_click=OnlineCourseSchedule(conn=state.data["dbConn"]).run,
             )
             streamlit.button(
                 label="Schedule Density",
                 help="Hello world",
                 use_container_width=True,
-                on_click=ScheduleDensity(
-                    conn=streamlit.session_state["dbConn"]
-                ).run,
+                on_click=ScheduleDensity(conn=state.data["dbConn"]).run,
             )
             # TODO: Implement viz for this
             streamlit.button(
@@ -95,6 +76,7 @@ def main() -> None:
                 label="Number of Assignments Per Faculty",
                 help="Hello world",
                 use_container_width=True,
+                on_click=AssignmentsPerFaculty(conn=state.data["dbConn"]).run,
             )
             streamlit.button(
                 label="Course by Number",
@@ -119,19 +101,25 @@ def main() -> None:
 
         streamlit.divider()
 
-        if streamlit.session_state["fig"] is not None:
-            fig: Figure = streamlit.session_state["fig"]
-            streamlit.plotly_chart(
-                figure_or_data=fig,
-                use_container_width=True,
-            )
+        try:
+            fig: Figure
+            for fig in state.data["figList"]:
+                streamlit.plotly_chart(
+                    figure_or_data=fig,
+                    use_container_width=True,
+                )
+        except TypeError:
+            pass
 
-        if streamlit.session_state["df"] is not None:
-            df: DataFrame = streamlit.session_state["df"]
-            streamlit.dataframe(
-                data=df,
-                use_container_width=True,
-            )
+        try:
+            df: DataFrame
+            for df in state.data["dfList"]:
+                streamlit.dataframe(
+                    data=df,
+                    use_container_width=True,
+                )
+        except TypeError:
+            pass
 
 
 if __name__ == "__main__":
