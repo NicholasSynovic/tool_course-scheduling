@@ -17,13 +17,7 @@ class ScheduleDensity:
         self.conn: Connection = conn
 
         self.departmentFilters: dict[str, str] = {
-            "COMP": """SUBJECT = 'COMP'
-            AND "CATALOG NUMBER" NOT IN
-                ('391', '398', '490', '499', '605')
-            AND "CATALOG NUMBER" NOT IN
-                ('215', '231', '331', '431', '381', '386', '383', '483')
-            AND SECTION NOT IN
-                ('01L', '02L', '03L', '04L', '05L', '06L', '700N')"""
+            "COMP": """SUBJECT = 'COMP' AND "CATALOG NUMBER" NOT IN ('391', '398', '490', '499', '605') AND "CATALOG NUMBER" NOT IN ('215', '231', '331', '431', '381', '386', '383', '483') AND SECTION NOT IN ('01L', '02L', '03L', '04L', '05L', '06L', '700N')"""  # noqa: E501
         }
 
     def runQuery(self) -> DataFrame:
@@ -35,13 +29,14 @@ class ScheduleDensity:
         )
 
         query: str = (
-            """SELECT SUBJECT, "CATALOG NUMBER", SUBJECT || '-' || "CATALOG NUMBER" as FQ_CATALOG_NUMBER, "CATALOG NUMBER" || '-' || SECTION as FQ_CLASS_SECTION, "CLASS TITLE", INSTRUCTOR, "ENROLL TOTAL", "TRAD MEETING PATTERN", "CLASS START TIME", "CLASS END TIME", "UNIT CLASS DURATION", "INSTRUCTIONAL TIME", FACILITY, '(' || INSTRUCTOR || ',' || FACILITY || ',' || "MEETING PATTERN" || ',' || "CLASS START TIME" || ',' || "CLASS END TIME" || ')' as COMBINED_ID FROM schedule """
-            + whereClasues
-            + ";"
-        ).strip()
+            """SELECT SUBJECT, "CATALOG NUMBER", SUBJECT || '-' || "CATALOG NUMBER" as FQ_CATALOG_NUMBER, "CATALOG NUMBER" || '-' || SECTION as FQ_CLASS_SECTION, "CLASS TITLE", INSTRUCTOR, "ENROLL TOTAL", "TRAD MEETING PATTERN", "CLASS START TIME", "CLASS END TIME", "UNIT CLASS DURATION", "INSTRUCTIONAL TIME", FACILITY, '(' || INSTRUCTOR || ',' || FACILITY || ',' || "MEETING PATTERN" || ',' || "CLASS START TIME" || ',' || "CLASS END TIME" || ')' as COMBINED_ID FROM schedule """  # noqa: E501
+        )
+
+        query = query + whereClasues + ";"
+        query = query.strip()
 
         df: DataFrame = pandas.read_sql_query(
-            sql=query,
+            sql=query,  # nosec
             con=self.conn,
         )
 
@@ -167,7 +162,8 @@ class ScheduleDensity:
             )
 
         fig.update_layout(
-            title=f"Schedule Density <br><sup>Overlap Interval = {overlapThreshold}</sup>",
+            title=f"Schedule Density <br><sup>Overlap Interval = \
+                {overlapThreshold}</sup>",
             xaxis=dict(
                 tickvals=[datetimeToMinutes(dt=t) for t in times][
                     ::12
