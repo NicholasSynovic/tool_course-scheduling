@@ -6,6 +6,7 @@ from plotly.graph_objects import Figure
 from streamlit.delta_generator import DeltaGenerator
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
+from proj.analytics.assignmentsPerFaculty import AssignmentsPerFaculty
 from proj.analytics.courseSchedule import CourseSchedule
 from proj.analytics.onlineCourseSchedule import OnlineCourseSchedule
 from proj.analytics.scheduleDensity import ScheduleDensity
@@ -42,7 +43,10 @@ def main() -> None:
         streamlit.session_state["dbConn"] = conn
         streamlit.session_state["showAnalyticButtons"] = True
     else:
-        initalState()
+        streamlit.session_state["dbConn"] = None
+        streamlit.session_state["showAnalyticButtons"] = False
+        streamlit.session_state["df"] = None
+        streamlit.session_state["fig"] = None
 
     if streamlit.session_state["showAnalyticButtons"]:
         column1: DeltaGenerator
@@ -95,6 +99,9 @@ def main() -> None:
                 label="Number of Assignments Per Faculty",
                 help="Hello world",
                 use_container_width=True,
+                on_click=AssignmentsPerFaculty(
+                    conn=streamlit.session_state["dbConn"]
+                ).run,
             )
             streamlit.button(
                 label="Course by Number",
