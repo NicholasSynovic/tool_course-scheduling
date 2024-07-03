@@ -12,6 +12,42 @@ from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 
 def traditionalMeetingPattern(row):
+    """
+    Convert meeting patterns in a given row to a traditional format.
+
+    This function takes a dictionary representing a row, extracts the "MEETING PATTERN" field,
+    and replaces certain abbreviations with more traditional ones. Specifically:
+
+    - "TR" is replaced with "R"
+    - "SA" is replaced with "S"
+    - "SU" is replaced with "X"
+
+    If the "MEETING PATTERN" field is empty or not present, the function returns an empty string.
+
+    Parameters
+    ----------
+    row : dict
+        A dictionary containing a "MEETING PATTERN" key with its associated value being the pattern to be converted.
+
+    Returns
+    -------
+    str
+        The converted meeting pattern as a string, or an empty string if the input pattern is empty or not present.
+
+    Examples
+    --------
+    >>> row = {"MEETING PATTERN": "MWF TR"}
+    >>> traditionalMeetingPattern(row)
+    'MWF R'
+
+    >>> row = {"MEETING PATTERN": "SA SU"}
+    >>> traditionalMeetingPattern(row)
+    'S X'
+
+    >>> row = {"MEETING PATTERN": ""}
+    >>> traditionalMeetingPattern(row)
+    ''
+    """
     meeting_pattern = row["MEETING PATTERN"]
     if meeting_pattern:
         return (
@@ -24,10 +60,67 @@ def traditionalMeetingPattern(row):
 
 
 def timeToMinutes(t):
+    """
+    Convert a time object to minutes past midnight.
+
+    Parameters
+    ----------
+    t : datetime.time
+        A datetime.time object representing a specific time.
+
+    Returns
+    -------
+    int
+        The total number of minutes past midnight represented by the given time object `t`.
+
+    Examples
+    --------
+    >>> import datetime
+    >>> time = datetime.time(9, 30)
+    >>> timeToMinutes(time)
+    570
+
+    >>> time = datetime.time(13, 15)
+    >>> timeToMinutes(time)
+    795
+    """
     return t.hour * 60 + t.minute
 
 
 def unitClassDuration(row):
+    """
+    Calculate the duration of a class session in minutes based on start and end times.
+
+    Parameters
+    ----------
+    row : dict
+        A dictionary containing "CLASS START TIME" and "CLASS END TIME" keys with values
+        representing the start and end times of the class in format "%H:%M:%S".
+
+    Returns
+    -------
+    int
+        The duration of the class session in minutes, or 0 if either start or end time is missing.
+
+    Notes
+    -----
+    This function relies on the `timeToMinutes` function to convert time strings to minutes past midnight.
+
+    Examples
+    --------
+    >>> row = {"CLASS START TIME": "09:00:00", "CLASS END TIME": "10:30:00"}
+    >>> unitClassDuration(row)
+    90
+
+    >>> row = {"CLASS START TIME": "14:00:00", "CLASS END TIME": "15:45:00"}
+    >>> unitClassDuration(row)
+    105
+
+    >>> row = {"CLASS START TIME": "", "CLASS END TIME": "12:00:00"}
+    >>> unitClassDuration(row)
+    0
+    """
+
     start = row["CLASS START TIME"]
     end = row["CLASS END TIME"]
 
@@ -42,11 +135,81 @@ def unitClassDuration(row):
 
 
 def instructionalTime(row):
+    """
+    Calculate the total instructional time based on meeting pattern length and unit class duration.
+
+    Parameters
+    ----------
+    row : dict
+        A dictionary containing a "TRAD MEETING PATTERN" key with a string value representing
+        the traditional meeting pattern, and a "UNIT CLASS DURATION" key with an integer value
+        representing the duration of the class in minutes.
+
+    Returns
+    -------
+    int
+        The total instructional time calculated as the product of the length of the meeting pattern
+        and the unit class duration.
+
+    Examples
+    --------
+    >>> row = {"TRAD MEETING PATTERN": "MWF", "UNIT CLASS DURATION": 90}
+    >>> instructionalTime(row)
+    270
+
+    >>> row = {"TRAD MEETING PATTERN": "TTH", "UNIT CLASS DURATION": 105}
+    >>> instructionalTime(row)
+    210
+
+    >>> row = {"TRAD MEETING PATTERN": "", "UNIT CLASS DURATION": 120}
+    >>> instructionalTime(row)
+    0
+    """
     meeting_pattern = row["TRAD MEETING PATTERN"]
     return len(meeting_pattern) * row["UNIT CLASS DURATION"]
 
 
 def createIntervalTrees(schedule_df):
+    """
+    Create interval trees for each day of the week based on schedule data.
+
+    Parameters
+    ----------
+    schedule_df : pandas.DataFrame
+        A DataFrame containing schedule information with columns:
+        - "TRAD MEETING PATTERN": Traditional meeting pattern string for each class.
+        - "CLASS START TIME": Start time of the class in format "%H:%M:%S".
+        - "CLASS END TIME": End time of the class in format "%H:%M:%S".
+
+    Returns
+    -------
+    dict
+        A dictionary where keys are days of the week ("M", "T", "W", "R", "F", "S") and values
+        are IntervalTree objects containing class intervals for each day.
+
+    Notes
+    -----
+    This function relies on the `timeToMinutes` function to convert time strings to minutes past midnight.
+    It iterates through the rows of the provided DataFrame to create interval trees based on class schedules.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> schedule_df = pd.DataFrame({
+    ...     "TRAD MEETING PATTERN": ["MWF", "TTH", "MWF"],
+    ...     "CLASS START TIME": ["09:00:00", "13:00:00", "10:00:00"],
+    ...     "CLASS END TIME": ["10:30:00", "14:15:00", "11:30:00"]
+    ... })
+    >>> createIntervalTrees(schedule_df)
+    {
+        'M': IntervalTree([Interval(540, 630), Interval(600, 690)]),
+        'T': IntervalTree([Interval(780, 855)]),
+        'W': IntervalTree([Interval(540, 630), Interval(600, 690)]),
+        'R': IntervalTree([Interval(780, 855)]),
+        'F': IntervalTree([Interval(540, 630), Interval(600, 690)]),
+        'S': IntervalTree([])
+    }
+    """
     day_trees = {day: IntervalTree() for day in ["M", "T", "W", "R", "F", "S"]}
     for index, row in schedule_df.iterrows():
         pattern = row["TRAD MEETING PATTERN"]
@@ -79,6 +242,61 @@ def createIntervalTrees(schedule_df):
 
 
 def scheduleReport(dbPath, df) -> pd.DataFrame:
+    """
+    Generate a schedule report from a DataFrame and store it in a SQLite database.
+
+    Parameters
+    ----------
+    dbPath : str
+        The file path to the SQLite database where the schedule report will be stored or replaced.
+    df : pandas.DataFrame
+        The DataFrame containing schedule information to be stored in the database.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame containing the schedule report with the following columns:
+        - 'SUBJECT'
+        - 'CATALOG NUMBER'
+        - 'FQ_CATALOG_NUMBER': Combined SUBJECT and CATALOG NUMBER.
+        - 'FQ_CLASS_SECTION': Combined CATALOG NUMBER and SECTION.
+        - 'CLASS TITLE'
+        - 'INSTRUCTOR'
+        - 'ENROLL TOTAL'
+        - 'MEETING PATTERN'
+        - 'CLASS START TIME'
+        - 'CLASS END TIME'
+        - 'FACILITY'
+        - 'COMBINED_ID': Combined string of INSTRUCTOR, FACILITY, MEETING PATTERN, CLASS START TIME, and CLASS END TIME.
+        - 'TRAD MEETING PATTERN': Traditional meeting pattern converted using `traditionalMeetingPattern` function.
+        - 'UNIT CLASS DURATION': Duration of each class unit in minutes using `unitClassDuration` function.
+        - 'INSTRUCTIONAL TIME': Total instructional time calculated using `instructionalTime` function.
+
+    Notes
+    -----
+    This function relies on several helper functions (`traditionalMeetingPattern`, `unitClassDuration`, `instructionalTime`)
+    to process and transform schedule data.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> df = pd.DataFrame({
+    ...     "SUBJECT": ["COMP", "COMP"],
+    ...     "CATALOG NUMBER": [101, 102],
+    ...     "SECTION": ["001", "002"],
+    ...     "CLASS TITLE": ["Introduction to Programming", "Data Structures"],
+    ...     "INSTRUCTOR": ["Alan Turing", "Grace Hopper"],
+    ...     "ENROLL TOTAL": [30, 25],
+    ...     "MEETING PATTERN": ["MWF", "TTH"],
+    ...     "CLASS START TIME": ["09:00:00", "13:00:00"],
+    ...     "CLASS END TIME": ["10:30:00", "14:45:00"],
+    ...     "FACILITY": ["Main Building", "Science Building"]
+    ... })
+    >>> dbPath = "schedule_database.db"
+    >>> scheduleReport(dbPath, df)
+    [Output DataFrame]
+    """
+
     conn = sqlite3.connect(dbPath)
     table = "schedule"
     df.to_sql(table, conn, if_exists="replace", index=False)
@@ -154,11 +372,90 @@ def scheduleReport(dbPath, df) -> pd.DataFrame:
 
 
 def plotDensity(dbPath, df):
+    """
+    Generate a density plot for schedule data stored in a SQLite database.
+
+    Parameters
+    ----------
+    dbPath : str
+        The file path to the SQLite database containing schedule data.
+    df : pandas.DataFrame
+        The DataFrame containing schedule information to generate the plot.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function relies on the `scheduleReport` function to generate a DataFrame with schedule information
+    stored in an in-memory SQLite database.
+    It further uses the `plotScheduleWithOverlap` function to plot the density of schedules with overlaps.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> df = pd.DataFrame({
+    ...     "SUBJECT": ["COMP", "COMP"],
+    ...     "CATALOG NUMBER": [101, 102],
+    ...     "SECTION": ["001", "002"],
+    ...     "CLASS TITLE": ["Introduction to Programming", "Data Structures"],
+    ...     "INSTRUCTOR": ["Alan Turing", "Grace Hopper"],
+    ...     "ENROLL TOTAL": [30, 25],
+    ...     "MEETING PATTERN": ["MWF", "TTH"],
+    ...     "CLASS START TIME": ["09:00:00", "13:00:00"],
+    ...     "CLASS END TIME": ["10:30:00", "14:45:00"],
+    ...     "FACILITY": ["Main Building", "Science Building"]
+    ... })
+    >>> dbPath = ":memory:"
+    >>> plotDensity(dbPath, df)
+    [Generates a density plot]
+    """
+
     scheduleDf: pd.DataFrame = scheduleReport(":memory:", df)
     plotScheduleWithOverlap(scheduleDf)
 
 
 def plotScheduleWithOverlap(scheduleDf, overlap_threshold=2):
+    """
+    Plot the density of schedule overlaps based on schedule data.
+
+    Parameters
+    ----------
+    scheduleDf : pandas.DataFrame
+        A DataFrame containing schedule information.
+    overlap_threshold : int, optional
+        Threshold value for determining overlap severity (default is 2).
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function creates a Plotly figure to visualize schedule overlaps for each day of the week
+    and different times throughout the day. It relies on the `createIntervalTrees` and `timeToMinutes` functions
+    to process schedule data and convert time information, respectively.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> schedule_df = pd.DataFrame({
+    ...     "SUBJECT": ["COMP", "COMP", "MATH"],
+    ...     "CATALOG NUMBER": [101, 102, 201],
+    ...     "SECTION": ["001", "002", "001"],
+    ...     "CLASS TITLE": ["Introduction to Programming", "Data Structures", "Calculus"],
+    ...     "INSTRUCTOR": ["Alan Turing", "Grace Hopper", "Ada Lovelace"],
+    ...     "ENROLL TOTAL": [30, 25, 20],
+    ...     "MEETING PATTERN": ["MWF", "TTH", "MWF"],
+    ...     "CLASS START TIME": ["09:00:00", "13:00:00", "10:00:00"],
+    ...     "CLASS END TIME": ["10:30:00", "14:45:00", "11:30:00"],
+    ...     "FACILITY": ["Main Building", "Science Building", "Math Building"]
+    ... })
+    >>> plotScheduleWithOverlap(schedule_df)
+    [Generates a plot displaying schedule density and overlap]
+    """
+
     days = ["M", "T", "W", "R", "F", "S"]
     days.reverse()  # For more natural appearance on the chart.
     times = [
@@ -227,6 +524,39 @@ def plotScheduleWithOverlap(scheduleDf, overlap_threshold=2):
 
 
 def weightedEnrollment(row):
+    """
+    Calculate weighted enrollment based on catalog number ranges.
+
+    Parameters
+    ----------
+    row : dict
+        A dictionary containing schedule information with keys:
+        - 'CATALOG NUMBER': Catalog number of the course.
+        - 'ENROLL TOTAL': Total enrollment for the course.
+
+    Returns
+    -------
+    float
+        The weighted enrollment calculated based on the catalog number range:
+        - Courses with catalog numbers between '300' and '399' (inclusive) are weighted by 1.0.
+        - Courses with catalog numbers '400' and above are weighted by 5/3 (approximately 1.67).
+        - All other courses retain their original enrollment value.
+
+    Examples
+    --------
+    >>> row1 = {"CATALOG NUMBER": "350", "ENROLL TOTAL": 50}
+    >>> weightedEnrollment(row1)
+    50.0
+
+    >>> row2 = {"CATALOG NUMBER": "410", "ENROLL TOTAL": 40}
+    >>> weightedEnrollment(row2)
+    66.66666666666667
+
+    >>> row3 = {"CATALOG NUMBER": "200", "ENROLL TOTAL": 30}
+    >>> weightedEnrollment(row3)
+    30
+    """
+
     if "300" <= row["CATALOG NUMBER"] < "400":
         return row["ENROLL TOTAL"] * 1.0
     elif "400" <= row["CATALOG NUMBER"]:
@@ -236,6 +566,39 @@ def weightedEnrollment(row):
 
 
 def schWeighted(row):
+    """
+    Calculate the weighted schedule based on catalog number and weighted enrollment total.
+
+    Parameters
+    ----------
+    row : dict
+        A dictionary containing schedule information with keys:
+        - 'CATALOG NUMBER': Catalog number of the course.
+        - 'WEIGHTED ENROLL TOTAL': Weighted enrollment total for the course.
+
+    Returns
+    -------
+    int
+        The weighted schedule calculated as the product of credits and weighted enrollment total.
+
+    Notes
+    -----
+    This function assumes a default credit value of 3, except for courses with catalog number '395' which are assigned 1 credit.
+
+    Examples
+    --------
+    >>> row1 = {"CATALOG NUMBER": "395", "WEIGHTED ENROLL TOTAL": 50}
+    >>> schWeighted(row1)
+    50
+
+    >>> row2 = {"CATALOG NUMBER": "350", "WEIGHTED ENROLL TOTAL": 40}
+    >>> schWeighted(row2)
+    120
+
+    >>> row3 = {"CATALOG NUMBER": "410", "WEIGHTED ENROLL TOTAL": 30}
+    >>> schWeighted(row3)
+    90
+    """
     credits = 3
     if row["CATALOG NUMBER"] in set(["395"]):
         credits = 1
@@ -243,6 +606,49 @@ def schWeighted(row):
 
 
 def enrollmentHealth(df):
+    """
+    Generate an enrollment health report based on schedule data.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        A DataFrame containing schedule information.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function performs the following steps:
+    1. Generates a schedule report using `scheduleReport` function and stores it in an in-memory SQLite database.
+    2. Calculates weighted enrollments and weighted schedule totals using `weightedEnrollment` and `schWeighted` functions, respectively.
+    3. Groups the data by 'COMBINED_ID' and sorts the report based on weighted enrollments.
+    4. Displays an interactive report using Streamlit with information such as class section, title, instructor, enroll total, meeting pattern, start time, and end time.
+    5. Colors the displayed information based on the total weighted enrollments:
+    - Red for totals less than 12.
+    - Green for totals between 12 and 32.
+    - Blue for totals greater than or equal to 32.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> schedule_df = pd.DataFrame({
+    ...     "SUBJECT": ["COMP", "COMP", "MATH"],
+    ...     "CATALOG NUMBER": [101, 395, 201],
+    ...     "SECTION": ["001", "002", "001"],
+    ...     "CLASS TITLE": ["Introduction to Programming", "Data Structures", "Calculus"],
+    ...     "INSTRUCTOR": ["Alan Turing", "Grace Hopper", "Ada Lovelace"],
+    ...     "ENROLL TOTAL": [30, 25, 20],
+    ...     "MEETING PATTERN": ["MWF", "TTH", "MWF"],
+    ...     "CLASS START TIME": ["09:00:00", "13:00:00", "10:00:00"],
+    ...     "CLASS END TIME": ["10:30:00", "14:45:00", "11:30:00"],
+    ...     "FACILITY": ["Main Building", "Science Building", "Math Building"]
+    ... })
+    >>> enrollmentHealth(schedule_df)
+    [Generates an interactive enrollment health report using Streamlit]
+    """
+
     dfEh = scheduleReport(":memory:", df)
     dfEh["WEIGHTED ENROLL TOTAL"] = dfEh.apply(weightedEnrollment, axis=1)
     dfEh["WEIGHTED SCH TOTAL"] = dfEh.apply(schWeighted, axis=1)
@@ -284,6 +690,47 @@ def enrollmentHealth(df):
 
 
 def instructorAssignments(df):
+    """
+    Generate instructor assignments report based on schedule data.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        A DataFrame containing schedule information.
+
+    Returns
+    -------
+    dict
+        A dictionary mapping each instructor's name to the number of assignments.
+
+    Notes
+    -----
+    This function performs the following steps:
+    1. Groups the input DataFrame `df` by 'INSTRUCTOR'.
+    2. Iterates over each group and displays instructor names as headers using Streamlit.
+    3. For each instructor, retrieves and displays unique courses grouped by 'COMBINED_ID'.
+    4. Counts and assigns the number of unique assignments (didactic courses) for each instructor.
+    5. Returns a dictionary where keys are instructor names and values are the number of assignments.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> schedule_df = pd.DataFrame({
+    ...     "SUBJECT": ["COMP", "COMP", "MATH"],
+    ...     "CATALOG NUMBER": [101, 395, 201],
+    ...     "SECTION": ["001", "002", "001"],
+    ...     "CLASS TITLE": ["Introduction to Programming", "Data Structures", "Calculus"],
+    ...     "INSTRUCTOR": ["Alan Turing", "Grace Hopper", "Ada Lovelace"],
+    ...     "ENROLL TOTAL": [30, 25, 20],
+    ...     "MEETING PATTERN": ["MWF", "TTH", "MWF"],
+    ...     "CLASS START TIME": ["09:00:00", "13:00:00", "10:00:00"],
+    ...     "CLASS END TIME": ["10:30:00", "14:45:00", "11:30:00"],
+    ...     "FACILITY": ["Main Building", "Science Building", "Math Building"]
+    ... })
+    >>> instructorAssignments(schedule_df)
+    {'Alan Turing': 1, 'Grace Hopper': 1, 'Ada Lovelace': 1}
+    """
+
     combinedGroups = df.groupby("INSTRUCTOR")
 
     assignments = {}
@@ -310,6 +757,30 @@ def instructorAssignments(df):
 
 
 def plotAssignmentsPerFaculty(assignments):
+    """
+    Plot the number of courses assigned to each instructor.
+
+    Parameters
+    ----------
+    assignments : dict
+        A dictionary mapping instructor names to the number of courses assigned.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function generates a horizontal bar plot using Plotly to visualize the distribution of course assignments
+    among instructors based on the input dictionary `assignments`.
+
+    Examples
+    --------
+    >>> assignments = {'Alan Turing': 1, 'Grace Hopper': 1, 'Ada Lovelace': 1}
+    >>> plotAssignmentsPerFaculty(assignments)
+    [Generates a horizontal bar plot displaying the number of courses per instructor]
+    """
+
     assignmentsDf = pd.DataFrame.from_dict(
         assignments, orient="index", columns=["Number of Courses"]
     )
@@ -337,6 +808,46 @@ def plotAssignmentsPerFaculty(assignments):
 
 
 def teachingDistr(df):
+    """
+    Generate a distribution plot of total weighted enrollment per instructor.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        A DataFrame containing schedule information.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function performs the following steps:
+    1. Generates a schedule report using `scheduleReport` function and stores it in an in-memory SQLite database.
+    2. Calculates weighted enrollments for each course using the `weightedEnrollment` function.
+    3. Groups the data by 'INSTRUCTOR' and computes the total weighted enrollment per instructor.
+    4. Sorts the data for better visualization by descending total weighted enrollment.
+    5. Creates a horizontal bar plot using Plotly to visualize the distribution of total weighted enrollments among instructors.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> schedule_df = pd.DataFrame({
+    ...     "SUBJECT": ["COMP", "COMP", "MATH"],
+    ...     "CATALOG NUMBER": [101, 395, 201],
+    ...     "SECTION": ["001", "002", "001"],
+    ...     "CLASS TITLE": ["Introduction to Programming", "Data Structures", "Calculus"],
+    ...     "INSTRUCTOR": ["Alan Turing", "Grace Hopper", "Ada Lovelace"],
+    ...     "ENROLL TOTAL": [30, 25, 20],
+    ...     "MEETING PATTERN": ["MWF", "TTH", "MWF"],
+    ...     "CLASS START TIME": ["09:00:00", "13:00:00", "10:00:00"],
+    ...     "CLASS END TIME": ["10:30:00", "14:45:00", "11:30:00"],
+    ...     "FACILITY": ["Main Building", "Science Building", "Math Building"]
+    ... })
+    >>> teachingDistr(schedule_df)
+    [Generates a horizontal bar plot displaying total weighted enrollment per instructor]
+    """
+
     dfTd = scheduleReport(":memory:", df)
     dfTd["WEIGHTED ENROLL TOTAL"] = dfTd.apply(weightedEnrollment, axis=1)
     totalEnrollment = (
@@ -363,6 +874,46 @@ def teachingDistr(df):
 
 
 def plotEnrollmentsByCourseLevel(df):
+    """
+    Plot enrollment distribution for courses grouped by catalog number levels.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        A DataFrame containing schedule information.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function iterates over specified course level ranges and performs the following steps for each range:
+    1. Filters the input DataFrame `df` to select courses within the current level range.
+    2. Groups the filtered data by 'FQ_CATALOG_NUMBER' and computes the total weighted enrollment for each course.
+    3. Sorts the grouped data by descending total weighted enrollment.
+    4. Creates a horizontal bar plot using Plotly to visualize the distribution of enrollment among courses within the current level range.
+    5. Adds a dashed red line representing the average enrollment across all courses within the range.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> schedule_df = pd.DataFrame({
+    ...     "SUBJECT": ["COMP", "COMP", "MATH"],
+    ...     "CATALOG NUMBER": [101, 395, 201],
+    ...     "SECTION": ["001", "002", "001"],
+    ...     "CLASS TITLE": ["Introduction to Programming", "Data Structures", "Calculus"],
+    ...     "INSTRUCTOR": ["Alan Turing", "Grace Hopper", "Ada Lovelace"],
+    ...     "ENROLL TOTAL": [30, 25, 20],
+    ...     "MEETING PATTERN": ["MWF", "TTH", "MWF"],
+    ...     "CLASS START TIME": ["09:00:00", "13:00:00", "10:00:00"],
+    ...     "CLASS END TIME": ["10:30:00", "14:45:00", "11:30:00"],
+    ...     "FACILITY": ["Main Building", "Science Building", "Math Building"]
+    ... })
+    >>> plotEnrollmentsByCourseLevel(schedule_df)
+    [Generates bar plots displaying enrollment distribution for different course levels]
+    """
+
     for level in range(0, 500, 100):
         this_level = str(level + 100)
         df_level = df[
