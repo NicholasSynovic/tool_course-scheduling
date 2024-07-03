@@ -11,11 +11,24 @@ from proj.analytics.courseSchedule import CourseSchedule
 from proj.analytics.onlineCourseSchedule import OnlineCourseSchedule
 from proj.analytics.scheduleDensity import ScheduleDensity
 from proj.excel2db import readExcelToDB
-from proj.utils import State
+from proj.utils import SESSION_STATE_KEYS
+
+
+def initialState() -> None:
+    key: str
+    for key in SESSION_STATE_KEYS:
+        if key not in streamlit.session_state:
+            streamlit.session_state[key] = None
+
+
+def resetState() -> None:
+    key: str
+    for key in SESSION_STATE_KEYS:
+        streamlit.session_state[key] = None
 
 
 def main() -> None:
-    state: State = State()
+    initialState()
 
     streamlit.title(body="CS Dept. Course Scheduler Utility")
 
@@ -27,11 +40,12 @@ def main() -> None:
 
     if excelFile is not None:
         conn: Connection = readExcelToDB(uf=excelFile)
-        state.update(dbConn=conn, showAnalyticButtons=True)
+        streamlit.session_state["dbConn"] = conn
+        streamlit.session_state["showAnalyticButtons"] = True
     else:
-        state.reset(keepDBConnection=False, keepButtons=False)
+        resetState()
 
-    if state.data["showAnalyticButtons"]:
+    if streamlit.session_state["showAnalyticButtons"]:
         column1: DeltaGenerator
         column2: DeltaGenerator
         column1, column2 = streamlit.columns(
@@ -45,19 +59,25 @@ def main() -> None:
                 label="Show Course Schedule",
                 help="Show the current course schedule",
                 use_container_width=True,
-                on_click=CourseSchedule(conn=state.data["dbConn"]).run,
+                on_click=CourseSchedule(
+                    conn=streamlit.session_state["dbConn"]
+                ).run,
             )
             streamlit.button(
                 label="Online Only Courses",
                 help="Hello world",
                 use_container_width=True,
-                on_click=OnlineCourseSchedule(conn=state.data["dbConn"]).run,
+                on_click=OnlineCourseSchedule(
+                    conn=streamlit.session_state["dbConn"]
+                ).run,
             )
             streamlit.button(
                 label="Schedule Density",
                 help="Hello world",
                 use_container_width=True,
-                on_click=ScheduleDensity(conn=state.data["dbConn"]).run,
+                on_click=ScheduleDensity(
+                    conn=streamlit.session_state["dbConn"]
+                ).run,
             )
             # TODO: Implement viz for this
             streamlit.button(
@@ -73,10 +93,12 @@ def main() -> None:
 
         with column2:
             streamlit.button(
-                label="Number of Assignments Per Faculty",
+                label="Number of Assignments Per Faculty Member",
                 help="Hello world",
                 use_container_width=True,
-                on_click=AssignmentsPerFaculty(conn=state.data["dbConn"]).run,
+                on_click=AssignmentsPerFaculty(
+                    conn=streamlit.session_state["dbConn"],
+                ).run,
             )
             streamlit.button(
                 label="Course by Number",
@@ -103,7 +125,7 @@ def main() -> None:
 
         try:
             fig: Figure
-            for fig in state.data["figList"]:
+            for fig in streamlit.session_state["figList"]:
                 streamlit.plotly_chart(
                     figure_or_data=fig,
                     use_container_width=True,
@@ -113,7 +135,7 @@ def main() -> None:
 
         try:
             df: DataFrame
-            for df in state.data["dfList"]:
+            for df in streamlit.session_state["dfList"]:
                 streamlit.dataframe(
                     data=df,
                     use_container_width=True,
