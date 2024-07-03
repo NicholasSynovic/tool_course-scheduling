@@ -11,20 +11,7 @@ from proj.analytics.courseSchedule import CourseSchedule
 from proj.analytics.onlineCourseSchedule import OnlineCourseSchedule
 from proj.analytics.scheduleDensity import ScheduleDensity
 from proj.excel2db import readExcelToDB
-from proj.utils import SESSION_STATE_KEYS
-
-
-def initialState() -> None:
-    key: str
-    for key in SESSION_STATE_KEYS:
-        if key not in streamlit.session_state:
-            streamlit.session_state[key] = None
-
-
-def resetState() -> None:
-    key: str
-    for key in SESSION_STATE_KEYS:
-        streamlit.session_state[key] = None
+from proj.utils import initialState, resetState
 
 
 def main() -> None:

@@ -7,6 +7,7 @@ from plotly import express
 from plotly.graph_objects import Figure
 
 from proj.analytics.courseSchedule import CourseSchedule
+from proj.utils import clearContent
 
 
 class AssignmentsPerFaculty:
@@ -88,7 +89,7 @@ class AssignmentsPerFaculty:
         [Returns a DataFrame with the number of courses taught by each instructor]
         """  # noqa: E501
 
-        df: DataFrame = CourseSchedule(conn=self.conn).get()
+        df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
         data: Series[int] = df["INSTRUCTOR"].value_counts(
             sort=True,
@@ -149,6 +150,8 @@ class AssignmentsPerFaculty:
         return fig
 
     def run(self) -> None:
+        clearContent()
+
         dfs: List[DataFrame] = [self.compute()]
         figs: List[Figure] = [self.plot(df=df) for df in dfs]
         """
@@ -175,7 +178,7 @@ class AssignmentsPerFaculty:
         >>> example_instance.run()
         [Runs the workflow to compute and plot assignments per instructor]
         """  # noqa: E501
-        
+
         streamlit.session_state["analyticTitle"] = (
             "Number of Assignments Per Faculty Member"
         )

@@ -10,7 +10,7 @@ from plotly import graph_objects
 from plotly.graph_objects import Figure
 
 from proj.analytics.courseSchedule import CourseSchedule
-from proj.utils import datetimeToMinutes
+from proj.utils import clearContent, datetimeToMinutes
 
 
 class ScheduleDensity:
@@ -143,7 +143,9 @@ class ScheduleDensity:
 
         Parameters
         ----------
-        its : dict[str, IntervalTree]
+        its : dict[str, Interval
+        streamlit.session_state["df"] = None
+        streamlit.session_state["fig"] = Noneree]
             A dictionary where keys are days ('M', 'T', 'W', 'R', 'F', 'S') and values are IntervalTree objects containing class time intervals.
         overlapThreshold : int, optional
             Minimum number of overlapping intervals to consider for color coding (default is 2).
@@ -205,6 +207,8 @@ class ScheduleDensity:
                     }
                 )
 
+        streamlit.session_state["df"] = None
+        streamlit.session_state["fig"] = None
         fig: Figure = Figure()
 
         marker: dict[str, str | int]
@@ -265,10 +269,9 @@ class ScheduleDensity:
         [Runs the workflow to retrieve, compute, plot, and store course schedule data in Streamlit session state.]
         """  # noqa: E501
 
-        streamlit.session_state["df"] = None
-        streamlit.session_state["fig"] = None
+        clearContent()
 
-        df: DataFrame = CourseSchedule(conn=self.conn).get(
+        df: DataFrame = CourseSchedule(conn=self.conn).compute(
             minimumEnrollment=1,
         )
 
@@ -276,7 +279,12 @@ class ScheduleDensity:
             courseSchedule=df,
         )
 
-        fig: Figure = self.plot(its=dayIntervalTrees)
+        figs: List[Figure] = [self.plot(its=dayIntervalTrees)]
 
-        streamlit.session_state["df"] = df
-        streamlit.session_state["fig"] = fig
+        streamlit.session_state["analyticTitle"] = "Schedule Density"
+        streamlit.session_state["analyticSubtitle"] = (
+            "Display the density of courses within the schedule"
+        )
+
+        streamlit.session_state["figList"] = figs
+        streamlit.session_state["figListTitles"] = ["Schedule Density Plot"]

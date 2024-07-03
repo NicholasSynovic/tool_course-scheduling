@@ -1,9 +1,11 @@
 from sqlite3 import Connection
+from typing import List
 
 import streamlit
 from pandas import DataFrame
 
 from proj.analytics.courseSchedule import CourseSchedule
+from proj.utils import clearContent
 
 
 class OnlineCourseSchedule:
@@ -54,7 +56,7 @@ class OnlineCourseSchedule:
 
         self.conn: Connection = conn
 
-    def get(self) -> DataFrame:
+    def compute(self) -> DataFrame:
         """
         Retrieve course schedule data filtered by 'ONLINE' facility and return as a DataFrame.
 
@@ -80,7 +82,7 @@ class OnlineCourseSchedule:
                 [Returns a DataFrame with course schedule data filtered by 'ONLINE' facility]
         """  # noqa: E501
 
-        df: DataFrame = CourseSchedule(conn=self.conn).get()
+        df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
         df = df[df["FACILITY"] == "ONLINE"]
 
@@ -113,9 +115,15 @@ class OnlineCourseSchedule:
         [Runs the workflow to retrieve and store course schedule data in Streamlit session state.]
         """  # noqa: E501
 
-        streamlit.session_state["df"] = None
-        streamlit.session_state["fig"] = None
+        clearContent()
 
-        df: DataFrame = self.get()
+        dfs: List[DataFrame] = [self.compute()]
 
-        streamlit.session_state["df"] = df
+        streamlit.session_state["analyticTitle"] = (
+            "Online Only Course Schedule"
+        )
+        streamlit.session_state["analyticSubtitle"] = (
+            "The current course \
+        schedule for online only courses"
+        )
+        streamlit.session_state["dfList"] = dfs
