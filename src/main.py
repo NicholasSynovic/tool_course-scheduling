@@ -3,22 +3,23 @@ from sqlite3 import Connection
 import streamlit
 from pandas import DataFrame
 from plotly.graph_objects import Figure
-from proj.analytics.assignmentsPerFaculty import AssignmentsPerFaculty
-from proj.analytics.courseEnrollmentHealth import CourseEnrollmentHealth
-from proj.analytics.courseSchedule import CourseSchedule
-from proj.analytics.enrollmentByCourseLevel import EnrollmentByCourseLevel
-from proj.analytics.instructorAssignments import InstructorAssignments
-from proj.analytics.inTroubleCourses import InTroubleCourses
-from proj.analytics.onlineCourseSchedule import OnlineCourseSchedule
-from proj.analytics.scheduleDensity import ScheduleDensity
-from proj.analytics.showCoursesByNumber import ShowCoursesByNumber
-from proj.analytics.teachingDistributionByWeightedEnrollment import (
-    TeachingDistributionByWeightedEnrollment,
-)
-from proj.excel2db import readExcelToDB
-from proj.utils import initialState, resetState
 from streamlit.delta_generator import DeltaGenerator
 from streamlit.runtime.uploaded_file_manager import UploadedFile
+
+from src.analytics.assignmentsPerFaculty import AssignmentsPerFaculty
+from src.analytics.courseEnrollmentHealth import CourseEnrollmentHealth
+from src.analytics.courseSchedule import CourseSchedule
+from src.analytics.enrollmentByCourseLevel import EnrollmentByCourseLevel
+from src.analytics.instructorAssignments import InstructorAssignments
+from src.analytics.inTroubleCourses import InTroubleCourses
+from src.analytics.onlineCourseSchedule import OnlineCourseSchedule
+from src.analytics.scheduleDensity import ScheduleDensity
+from src.analytics.showCoursesByNumber import ShowCoursesByNumber
+from src.analytics.teachingDistributionByWeightedEnrollment import (
+    TeachingDistributionByWeightedEnrollment,
+)
+from src.excel2db import readExcelToDB
+from src.utils import initialState, resetState
 
 
 def main() -> None:

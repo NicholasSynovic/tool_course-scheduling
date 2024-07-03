@@ -4,8 +4,9 @@ from typing import List, Tuple
 import streamlit
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
-from proj.analytics.courseSchedule import CourseSchedule
-from proj.utils import clearContent
+
+from src.analytics.courseSchedule import CourseSchedule
+from src.utils import clearContent
 
 
 class CourseEnrollmentHealth:

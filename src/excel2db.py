@@ -3,8 +3,9 @@ from sqlite3 import Connection, connect
 
 import pandas
 from pandas import DataFrame, Series, read_excel
-from proj.utils import datetimeToMinutes
 from streamlit.runtime.uploaded_file_manager import UploadedFile
+
+from src.utils import datetimeToMinutes
 
 
 def _computeInstructionalTime(row: Series):

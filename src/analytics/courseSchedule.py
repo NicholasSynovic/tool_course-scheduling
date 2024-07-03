@@ -4,7 +4,8 @@ from typing import List
 import pandas
 import streamlit
 from pandas import DataFrame
-from proj.utils import clearContent
+
+from src.utils import clearContent
 
 
 class CourseSchedule:
