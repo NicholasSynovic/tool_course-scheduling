@@ -10,7 +10,7 @@ from plotly import graph_objects
 from plotly.graph_objects import Figure
 
 from proj.analytics.courseSchedule import CourseSchedule
-from proj.utils import datetimeToMinutes
+from proj.utils import clearContent, datetimeToMinutes
 
 
 class ScheduleDensity:
@@ -144,10 +144,9 @@ class ScheduleDensity:
         return fig
 
     def run(self) -> None:
-        streamlit.session_state["df"] = None
-        streamlit.session_state["fig"] = None
+        clearContent()
 
-        df: DataFrame = CourseSchedule(conn=self.conn).get(
+        df: DataFrame = CourseSchedule(conn=self.conn).compute(
             minimumEnrollment=1,
         )
 
@@ -155,7 +154,12 @@ class ScheduleDensity:
             courseSchedule=df,
         )
 
-        fig: Figure = self.plot(its=dayIntervalTrees)
+        figs: List[Figure] = [self.plot(its=dayIntervalTrees)]
 
-        streamlit.session_state["df"] = df
-        streamlit.session_state["fig"] = fig
+        streamlit.session_state["analyticTitle"] = "Schedule Density"
+        streamlit.session_state["analyticSubtitle"] = (
+            "Display the density of courses within the schedule"
+        )
+
+        streamlit.session_state["figList"] = figs
+        streamlit.session_state["figListTitles"] = ["Schedule Density Plot"]

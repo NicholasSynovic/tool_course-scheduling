@@ -7,6 +7,7 @@ from plotly import express
 from plotly.graph_objects import Figure
 
 from proj.analytics.courseSchedule import CourseSchedule
+from proj.utils import clearContent
 
 
 class AssignmentsPerFaculty:
@@ -14,7 +15,7 @@ class AssignmentsPerFaculty:
         self.conn = conn
 
     def compute(self) -> DataFrame:
-        df: DataFrame = CourseSchedule(conn=self.conn).get()
+        df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
         data: Series[int] = df["INSTRUCTOR"].value_counts(
             sort=True,
@@ -47,6 +48,8 @@ class AssignmentsPerFaculty:
         return fig
 
     def run(self) -> None:
+        clearContent()
+
         dfs: List[DataFrame] = [self.compute()]
         figs: List[Figure] = [self.plot(df=df) for df in dfs]
 

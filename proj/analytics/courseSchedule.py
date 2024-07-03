@@ -1,8 +1,11 @@
 from sqlite3 import Connection
+from typing import List
 
 import pandas
 import streamlit
 from pandas import DataFrame
+
+from proj.utils import clearContent
 
 
 class CourseSchedule:
@@ -25,7 +28,7 @@ class CourseSchedule:
             "COMP": """SUBJECT = 'COMP' AND "CATALOG NUMBER" NOT IN ('391', '398', '490', '499', '605') AND "CATALOG NUMBER" NOT IN ('215', '231', '331', '431', '381', '386', '383', '483') AND SECTION NOT IN ('01L', '02L', '03L', '04L', '05L', '06L', '700N')"""  # noqa: E501
         }
 
-    def get(self, minimumEnrollment: int = 0) -> DataFrame:
+    def compute(self, minimumEnrollment: int = 0) -> DataFrame:
         if minimumEnrollment < 0:
             minimumEnrollment = 0
 
@@ -65,9 +68,13 @@ class CourseSchedule:
         return df
 
     def run(self) -> None:
-        streamlit.session_state["df"] = None
-        streamlit.session_state["fig"] = None
+        clearContent()
 
-        df: DataFrame = self.get()
+        dfs: List[DataFrame] = [self.compute()]
 
-        streamlit.session_state["df"] = df
+        streamlit.session_state["analyticTitle"] = "Course Schedule"
+        streamlit.session_state["analyticSubtitle"] = (
+            "The current course \
+        schedule"
+        )
+        streamlit.session_state["dfList"] = dfs
