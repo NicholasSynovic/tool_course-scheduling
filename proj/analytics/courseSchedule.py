@@ -17,6 +17,32 @@ class CourseSchedule:
     """  # noqa: E501
 
     def __init__(self, conn: Connection) -> None:
+        """
+        Initialize the class with a database connection and department filters.
+
+        Parameters
+        ----------
+        conn : Connection
+            A database connection object.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        This constructor initializes the class instance with a database connection and pre-defined department filters
+        for courses. Each filter corresponds to a specific department and excludes certain course numbers and sections
+        from the query.
+
+        Examples
+        --------
+        >>> import sqlite3
+        >>> conn = sqlite3.connect(":memory:")
+        >>> example_instance = MyClass(conn)
+        [Initializes an instance of MyClass with a database connection]
+        """  # noqa: E501
+
         self.conn: Connection = conn
 
         # NOTE: Other departments can be added by creating a
@@ -26,6 +52,36 @@ class CourseSchedule:
         }
 
     def get(self, minimumEnrollment: int = 0) -> DataFrame:
+        """
+        Retrieve and filter course schedule data from the database.
+
+        Parameters
+        ----------
+        minimumEnrollment : int, optional
+            Minimum enrollment threshold for filtering courses. Default is 0.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A DataFrame containing filtered course schedule information.
+
+        Notes
+        -----
+        This method performs the following steps:
+        1. Checks if the input `minimumEnrollment` is less than 0 and adjusts it to 0 if necessary.
+        2. Constructs a SQL query combining department filters and retrieves course schedule data from the database.
+        3. Drops duplicate entries based on 'FQ_CLASS_SECTION'.
+        4. Fills missing values in 'COMBINED_ID' with '(UNKNOWN, N/A, N/A)'.
+        5. Filters the DataFrame to include only courses with enrollment greater than or equal to `minimumEnrollment`.
+        6. Resets the DataFrame index for consistency.
+        7. Returns the filtered DataFrame.
+
+        Examples
+        --------
+        >>> example_instance.get(minimumEnrollment=20)
+        [Returns a DataFrame with course schedule information filtered by minimum enrollment]
+        """  # noqa: E501
+
         if minimumEnrollment < 0:
             minimumEnrollment = 0
 
@@ -65,6 +121,30 @@ class CourseSchedule:
         return df
 
     def run(self) -> None:
+        """
+        Fetch and store course schedule data in the session state.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        This method performs the following steps:
+        1. Initializes `streamlit.session_state['df']` and `streamlit.session_state['fig']` to None.
+        2. Calls the `get` method to retrieve course schedule data and assigns it to `df`.
+        3. Stores the fetched DataFrame `df` in `streamlit.session_state['df']`.
+
+        Examples
+        --------
+        >>> example_instance.run()
+        [Fetches and stores course schedule data in the session state]
+        """  # noqa: E501
+
         streamlit.session_state["df"] = None
         streamlit.session_state["fig"] = None
 
