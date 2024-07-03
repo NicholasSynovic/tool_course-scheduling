@@ -6,6 +6,7 @@ from plotly.graph_objects import Figure
 from streamlit.delta_generator import DeltaGenerator
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
+from proj.analytics.courseSchedule import CourseSchedule
 from proj.analytics.scheduleDensity import ScheduleDensity
 from proj.excel2db import readExcelToDB
 
@@ -27,11 +28,12 @@ def initalState() -> None:
 def main() -> None:
     initalState()
 
-    streamlit.title(body="Excel File Uploader")
+    streamlit.title(body="CS Dept. Course Scheduler Utility")
 
     excelFile: UploadedFile = streamlit.file_uploader(
-        label="Choose an Excel file",
+        label="Upload a Locus Course Schedule Export (.xlsx) file",
         type=["xlsx"],
+        accept_multiple_files=False,
     )
 
     if excelFile is not None:
@@ -39,8 +41,7 @@ def main() -> None:
         streamlit.session_state["dbConn"] = conn
         streamlit.session_state["showAnalyticButtons"] = True
     else:
-        streamlit.session_state["dbConn"] = None
-        streamlit.session_state["showAnalyticButtons"] = False
+        initalState()
 
     if streamlit.session_state["showAnalyticButtons"]:
         column1: DeltaGenerator
@@ -56,6 +57,9 @@ def main() -> None:
                 label="Show Course Schedule",
                 help="Hello world",
                 use_container_width=True,
+                on_click=CourseSchedule(
+                    conn=streamlit.session_state["dbConn"]
+                ).run,
             )
             streamlit.button(
                 label="Online Only Courses",

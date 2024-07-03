@@ -9,6 +9,7 @@ from pandas import DataFrame, Series
 from plotly import graph_objects
 from plotly.graph_objects import Figure
 
+from proj.analytics.courseSchedule import CourseSchedule
 from proj.utils import datetimeToMinutes
 
 
@@ -16,47 +17,9 @@ class ScheduleDensity:
     def __init__(self, conn: Connection) -> None:
         self.conn: Connection = conn
 
-        self.departmentFilters: dict[str, str] = {
-            "COMP": """SUBJECT = 'COMP' AND "CATALOG NUMBER" NOT IN ('391', '398', '490', '499', '605') AND "CATALOG NUMBER" NOT IN ('215', '231', '331', '431', '381', '386', '383', '483') AND SECTION NOT IN ('01L', '02L', '03L', '04L', '05L', '06L', '700N')"""  # noqa: E501
-        }
-
-    def runQuery(self) -> DataFrame:
-        whereClasues: str = "WHERE " + " or ".join(
-            [
-                "(" + self.departmentFilters[filter] + ")"
-                for filter in self.departmentFilters
-            ]
-        )
-
-        query: str = (
-            """SELECT SUBJECT, "CATALOG NUMBER", SUBJECT || '-' || "CATALOG NUMBER" as FQ_CATALOG_NUMBER, "CATALOG NUMBER" || '-' || SECTION as FQ_CLASS_SECTION, "CLASS TITLE", INSTRUCTOR, "ENROLL TOTAL", "TRAD MEETING PATTERN", "CLASS START TIME", "CLASS END TIME", "UNIT CLASS DURATION", "INSTRUCTIONAL TIME", FACILITY, '(' || INSTRUCTOR || ',' || FACILITY || ',' || "MEETING PATTERN" || ',' || "CLASS START TIME" || ',' || "CLASS END TIME" || ')' as COMBINED_ID FROM schedule """  # noqa: E501
-        )
-
-        query = query + whereClasues + ";"
-        query = query.strip()
-
-        df: DataFrame = pandas.read_sql_query(
-            sql=query,  # nosec
-            con=self.conn,
-        )
-
-        df.drop_duplicates(
-            subset=["FQ_CLASS_SECTION"],
-            inplace=True,
-            ignore_index=True,
-        )
-
-        df["COMBINED_ID"] = df["COMBINED_ID"].fillna(
-            value="(UNKNOWN, N/A, N/A)",
-        )
-
-        df = df[df["ENROLL TOTAL"] >= 0]
-
-        return df
-
-    def computeIntervalTrees(
+    def compute(
         self,
-        df: DataFrame,
+        courseSchedule: DataFrame,
     ) -> dict[str, IntervalTree]:
         dayIntervalTree: dict[str, IntervalTree] = {
             day: IntervalTree()
@@ -71,7 +34,7 @@ class ScheduleDensity:
         }
 
         row: Series
-        for _, row in df.iterrows():
+        for _, row in courseSchedule.iterrows():
             pattern: str = row["TRAD MEETING PATTERN"]
 
             startTime: datetime = pandas.to_datetime(
@@ -100,7 +63,7 @@ class ScheduleDensity:
 
         return dayIntervalTree
 
-    def generatePlot(
+    def plot(
         self,
         its: dict[str, IntervalTree],
         overlapThreshold: int = 2,
@@ -184,13 +147,15 @@ class ScheduleDensity:
         streamlit.session_state["df"] = None
         streamlit.session_state["fig"] = None
 
-        df: DataFrame = self.runQuery()
-
-        dayIntervalTrees: dict[str, IntervalTree] = self.computeIntervalTrees(
-            df=df,
+        df: DataFrame = CourseSchedule(conn=self.conn).get(
+            minimumEnrollment=1,
         )
 
-        fig: Figure = self.generatePlot(its=dayIntervalTrees)
+        dayIntervalTrees: dict[str, IntervalTree] = self.compute(
+            courseSchedule=df,
+        )
+
+        fig: Figure = self.plot(its=dayIntervalTrees)
 
         streamlit.session_state["df"] = df
         streamlit.session_state["fig"] = fig
