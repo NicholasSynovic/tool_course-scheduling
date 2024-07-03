@@ -35,10 +35,28 @@ def _computeTotalTime(row: Series) -> int:
     return endMinutes - startMinutes
 
 
+def _computeWeightedEnrollment(row: Series):
+    if "300" <= row["CATALOG NUMBER"] < "400":
+        return row["ENROLL TOTAL"] * 1.0
+    elif "400" <= row["CATALOG NUMBER"]:
+        return row["ENROLL TOTAL"] * 5 / 3
+    else:
+        return row["ENROLL TOTAL"]
+
+
+def _computeWeightedSchedule(row: Series):
+    credits = 3
+    if row["CATALOG NUMBER"] in set(["395"]):
+        credits = 1
+    return int(credits * row["WEIGHTED_ENROLL_TOTAL"])
+
+
 def readExcelToDB(uf: UploadedFile, dbPath: str = ":memory:") -> Connection:
     conn: Connection = connect(database=dbPath)
 
     df: DataFrame = read_excel(io=uf, engine="openpyxl")
+
+    df["INSTRUCTOR"] = df["INSTRUCTOR"].fillna(value="UNKNOWN")
 
     df["CLASS START TIME"] = pandas.to_datetime(
         df["CLASS START TIME"],
@@ -49,8 +67,6 @@ def readExcelToDB(uf: UploadedFile, dbPath: str = ":memory:") -> Connection:
         df["CLASS END TIME"],
         format="%I:%M %p",
     ).dt.strftime("%H:%M:%S")
-
-    df["INSTRUCTOR"] = df["INSTRUCTOR"].fillna(value="UNKNOWN")
 
     df["TRAD MEETING PATTERN"] = (
         df["MEETING PATTERN"]
@@ -66,6 +82,16 @@ def readExcelToDB(uf: UploadedFile, dbPath: str = ":memory:") -> Connection:
 
     df["INSTRUCTIONAL TIME"] = df.apply(
         _computeInstructionalTime,
+        axis=1,
+    )
+
+    df["WEIGHTED_ENROLL_TOTAL"] = df.apply(
+        _computeWeightedEnrollment,
+        axis=1,
+    )
+
+    df["WEIGHTED_SCH_TOTAL"] = df.apply(
+        _computeWeightedSchedule,
         axis=1,
     )
 

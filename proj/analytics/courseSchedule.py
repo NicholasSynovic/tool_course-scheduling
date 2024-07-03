@@ -6,6 +6,16 @@ from pandas import DataFrame
 
 
 class CourseSchedule:
+    """
+    A class to manage and retrieve course schedules from a database based on predefined department filters.
+
+    This class allows filtering and retrieving detailed information about course schedules, excluding certain
+    catalog numbers and sections according to department-specific criteria.
+
+    :param conn: A connection to the database containing the course schedules.
+    :type conn: Connection
+    """  # noqa: E501
+
     def __init__(self, conn: Connection) -> None:
         self.conn: Connection = conn
 

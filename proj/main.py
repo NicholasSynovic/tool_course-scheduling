@@ -78,6 +78,7 @@ def main() -> None:
                     conn=streamlit.session_state["dbConn"]
                 ).run,
             )
+            # TODO: Implement viz for this
             streamlit.button(
                 label="Course Enrollment Health",
                 help="Hello world",
@@ -118,17 +119,17 @@ def main() -> None:
 
         streamlit.divider()
 
-        if streamlit.session_state["df"] is not None:
-            df: DataFrame = streamlit.session_state["df"]
-            streamlit.dataframe(
-                data=df,
-                use_container_width=True,
-            )
-
         if streamlit.session_state["fig"] is not None:
             fig: Figure = streamlit.session_state["fig"]
             streamlit.plotly_chart(
                 figure_or_data=fig,
+                use_container_width=True,
+            )
+
+        if streamlit.session_state["df"] is not None:
+            df: DataFrame = streamlit.session_state["df"]
+            streamlit.dataframe(
+                data=df,
                 use_container_width=True,
             )
 
