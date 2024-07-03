@@ -29,6 +29,16 @@ def resetState() -> None:
 
 def main() -> None:
     initialState()
+    """
+    Main function for the CS Dept. Course Scheduler Utility.
+
+    Initializes the state, handles file upload of a Locus Course Schedule Export (.xlsx) file,
+    processes the file to update the session state, and displays analytic buttons and visualizations.
+
+    Returns:
+    -------
+    None
+    """  # noqa: E501
 
     streamlit.title(body="CS Dept. Course Scheduler Utility")
 
