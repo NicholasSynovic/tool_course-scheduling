@@ -49,6 +49,7 @@ class CourseEnrollmentHealth(Analytic):
             - Filtered DataFrame for the course (DataFrame)
             - Health color (str)
             - Group weighted enrollment total (int)
+
         :rtype: List[Tuple[str, DataFrame, str, int]]
         """
         data: List[Tuple[str, DataFrame, str]] = []
