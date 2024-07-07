@@ -10,41 +10,30 @@ from src.utils import clearContent
 
 class CourseSchedule:
     """
-    A class to manage and retrieve course schedules from a database based on predefined department filters.
+    A class to manage and retrieve course schedules from a database based on
+    predefined department filters.
 
-    This class allows filtering and retrieving detailed information about course schedules, excluding certain
-    catalog numbers and sections according to department-specific criteria.
+    This class allows filtering and retrieving detailed information about
+    course schedules, excluding certain catalog numbers and sections according
+    to department-specific criteria.
 
     :param conn: A connection to the database containing the course schedules.
     :type conn: Connection
-    """  # noqa: E501
+    """
 
     def __init__(self, conn: Connection) -> None:
         """
-        Initialize the class with a database connection and department filters.
+        Initialize the CourseEnrollmentHealth class with a database
+        connection.
 
-        Parameters
-        ----------
-        conn : Connection
-            A database connection object.
+        This constructor sets up the database connection which will be used to
+        compute and visualize the health of course enrollments. It also
+        initializes department filters for querying specific departments'
+        course data.
 
-        Returns
-        -------
-        None
-
-        Notes
-        -----
-        This constructor initializes the class instance with a database connection and pre-defined department filters
-        for courses. Each filter corresponds to a specific department and excludes certain course numbers and sections
-        from the query.
-
-        Examples
-        --------
-        >>> import sqlite3
-        >>> conn = sqlite3.connect(":memory:")
-        >>> example_instance = MyClass(conn)
-        [Initializes an instance of MyClass with a database connection]
-        """  # noqa: E501
+        :param conn: A database connection object.
+        :type conn: Connection
+        """
 
         self.conn: Connection = conn
 
@@ -56,35 +45,20 @@ class CourseSchedule:
 
     def compute(self, minimumEnrollment: int = 0) -> DataFrame:
         """
-        Retrieve and filter course schedule data from the database.
+        Compute the course schedule data filtered by department and minimum
+        enrollment.
 
-        Parameters
-        ----------
-        minimumEnrollment : int, optional
-            Minimum enrollment threshold for filtering courses. Default is 0.
+        This method fetches the course schedule from the database, applies
+        filters based on department, and filters out courses with enrollment
+        below the specified minimum  enrollment. The resulting data is
+        returned as a DataFrame.
 
-        Returns
-        -------
-        pandas.DataFrame
-            A DataFrame containing filtered course schedule information.
-
-        Notes
-        -----
-        This method performs the following steps:
-        1. Checks if the input `minimumEnrollment` is less than 0 and adjusts it to 0 if necessary.
-        2. Constructs a SQL query combining department filters and retrieves course schedule data from the database.
-        3. Drops duplicate entries based on 'FQ_CLASS_SECTION'.
-        4. Fills missing values in 'COMBINED_ID' with '(UNKNOWN, N/A, N/A)'.
-        5. Filters the DataFrame to include only courses with enrollment greater than or equal to `minimumEnrollment`.
-        6. Resets the DataFrame index for consistency.
-        7. Returns the filtered DataFrame.
-
-        Examples
-        --------
-        >>> example_instance.get(minimumEnrollment=20)
-        [Returns a DataFrame with course schedule information filtered by minimum enrollment]
-        """  # noqa: E501
-
+        :param minimumEnrollment: The minimum number of students enrolled to
+            include a course, defaults to 0
+        :type minimumEnrollment: int, optional
+        :return: A DataFrame containing the filtered course schedule data.
+        :rtype: DataFrame
+        """
         if minimumEnrollment < 0:
             minimumEnrollment = 0
 
@@ -125,28 +99,14 @@ class CourseSchedule:
 
     def run(self) -> None:
         """
-        Fetch and store course schedule data in the session state.
+        Execute the workflow to compute and display the course schedule.
 
-        Parameters
-        ----------
-        None
+        This method computes the course schedule data, clears any existing
+        content, and updates the Streamlit session state with the resulting
+        data for visualization.
 
-        Returns
-        -------
-        None
-
-        Notes
-        -----
-        This method performs the following steps:
-        1. Initializes `streamlit.session_state['df']` and `streamlit.session_state['fig']` to None.
-        2. Calls the `get` method to retrieve course schedule data and assigns it to `df`.
-        3. Stores the fetched DataFrame `df` in `streamlit.session_state['df']`.
-
-        Examples
-        --------
-        >>> example_instance.run()
-        [Fetches and stores course schedule data in the session state]
-        """  # noqa: E501
+        :return: None
+        """
 
         clearContent()
 
