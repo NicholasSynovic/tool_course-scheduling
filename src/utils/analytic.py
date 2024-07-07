@@ -2,7 +2,6 @@ from abc import ABCMeta, abstractmethod
 
 
 class Analytic(metaclass=ABCMeta):
-
     @abstractmethod
     def compute(self): ...
 
