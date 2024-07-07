@@ -23,6 +23,17 @@ from src.utils import initialState, resetState
 
 
 def main() -> None:
+    """
+    Main function to run the CS Dept. Course Scheduler Utility.
+
+    This function initializes the Streamlit session state, sets up the UI for
+    uploading an Excel file, processes the file to populate the database, and
+    provides various buttons to execute different analytics on the course
+    schedule data.
+
+    :return: None
+    :rtype: None
+    """
     initialState()
 
     streamlit.title(body="CS Dept. Course Scheduler Utility")
