@@ -9,13 +9,43 @@ from pandas.core.groupby import DataFrameGroupBy
 
 from src.analytics.courseSchedule import CourseSchedule
 from src.utils import clearContent
+from src.utils.analytic import Analytic
 
 
-class InTroubleCourses:
+class InTroubleCourses(Analytic):
+    """
+    InTroubleCourses class to identify and display courses with low
+    enrollments.
+
+    This class provides functionalities to compute the courses that are in
+    trouble due to low enrollments and visualize these courses using
+    Streamlit.
+    """
+
     def __init__(self, conn: Connection) -> None:
+        """
+        Initialize the InTroubleCourses class with a database connection.
+
+        Sets up the database connection which will be used to compute and
+        visualize the courses with low enrollments.
+
+        :param conn: A database connection object.
+        :type conn: Connection
+        """
         self.conn: Connection = conn
 
     def compute(self) -> DataFrameGroupBy:
+        """
+        Compute the course data and group by combined ID.
+
+        Fetches the course schedule data from the database and filters the
+        necessary fields. The data is then grouped by the combined ID of the
+        courses.
+
+        :return: A DataFrameGroupBy object containing the grouped course
+            schedule data by combined ID.
+        :rtype: DataFrameGroupBy
+        """
         FILTER_FIELDS: List[str] = [
             "FQ_CLASS_SECTION",
             "CLASS TITLE",
@@ -34,6 +64,17 @@ class InTroubleCourses:
         return df.groupby(by="COMBINED_ID")
 
     def run(self) -> None:
+        """
+        Execute the workflow to compute and display courses with low
+        enrollments.
+
+        Computes the courses that are in trouble due to low enrollments,
+        clears existing content, and updates the Streamlit session state with
+        the resulting data for visualization.
+
+        :return: None
+        :rtype: None
+        """
         clearContent()
 
         streamlit.session_state["analyticTitle"] = "In Trouble Courses"
