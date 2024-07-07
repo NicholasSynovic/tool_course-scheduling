@@ -7,18 +7,55 @@ from pandas.core.groupby import DataFrameGroupBy
 
 from src.analytics.courseSchedule import CourseSchedule
 from src.utils import clearContent
+from src.utils.analytic import Analytic
 
 
-class InstructorAssignments:
+class InstructorAssignments(Analytic):
+    """
+    Class to compute and display instructor assignments.
+
+    This class provides functionalities to compute the number of courses
+    assigned to each instructor and visualize these assignments using
+    Streamlit.
+    """
+
     def __init__(self, conn: Connection) -> None:
+        """
+        Initialize the InstructorAssignments class with a database connection.
+
+        Sets up the database connection which will be used to compute and
+        visualize the assignments for each instructor.
+
+        :param conn: A database connection object.
+        :type conn: Connection
+        """
         self.conn: Connection = conn
 
     def compute(self) -> DataFrameGroupBy:
+        """
+        Initialize the InstructorAssignments class with a database connection.
+
+        Sets up the database connection which will be used to compute and
+        visualize the assignments for each instructor.
+
+        :param conn: A database connection object.
+        :type conn: Connection
+        """
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
         return df.groupby(by="INSTRUCTOR")
 
     def run(self) -> None:
+        """
+        Execute the workflow to compute and display instructor assignments.
+
+        Computes the instructor assignments data, clears existing content, and
+        updates the Streamlit session state with the resulting data for
+        visualization.
+
+        :return: None
+        :rtype: None
+        """
         clearContent()
         dfList: List[DataFrame] = []
         dfListTitles: List[str] = []
