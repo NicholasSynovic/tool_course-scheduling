@@ -8,16 +8,56 @@ from plotly.graph_objects import Figure
 
 from src.analytics.courseSchedule import CourseSchedule
 from src.utils import clearContent
+from src.utils.analytic import Analytic
 
 
-class EnrollmentByCourseLevel:
+class EnrollmentByCourseLevel(Analytic):
+    """
+    Class to compute and visualize enrollment data by course level.
+
+    This class provides functionalities to compute the enrollment data for
+    courses at different levels and visualize the results using interactive
+    plots.
+    """
+
     def __init__(self, conn: Connection) -> None:
+        """
+        Initialize the EnrollmentByCourseLevel class with a database
+        connection.
+
+        This constructor sets up the database connection which will be used to
+        compute and visualize the enrollment data by course level.
+
+        :param conn: A database connection object.
+        :type conn: Connection
+        """
         self.conn: Connection = conn
 
     def compute(self) -> DataFrame:
+        """
+        Compute the course schedule data.
+
+        This method fetches the course schedule data from the database using
+        the CourseSchedule class.
+
+        :return: A DataFrame containing the course schedule data.
+        :rtype: DataFrame
+        """
         return CourseSchedule(conn=self.conn).compute()
 
     def plot(self) -> Tuple[str, Figure]:
+        """
+        Plot the enrollment data by course level.
+
+        This method creates a series of horizontal bar charts for each course
+        level, showing the weighted enrollment totals. Each plot includes a
+        color scale indicating the weighted enrollment and a vertical line
+        representing the average weighted enrollment.
+
+        :return: A list of tuples, each containing a title (str) and a Plotly
+            Figure.
+        :rtype: List[Tuple[str, Figure]]
+        """
         figList: Tuple[str, Figure] = []
 
         df: DataFrame = self.compute()
@@ -86,6 +126,16 @@ class EnrollmentByCourseLevel:
         return figList
 
     def run(self) -> None:
+        """
+        Execute the workflow to compute and display enrollment by course
+        level.
+
+        This method computes the enrollment data, creates the plots, and
+        updates the Streamlit session state with the resulting figures for
+        visualization.
+
+        :return: None
+        """
         clearContent()
 
         data: List[Tuple[str, Figure]] = self.plot()
