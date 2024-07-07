@@ -11,57 +11,29 @@ from plotly.graph_objects import Figure
 
 from src.analytics.courseSchedule import CourseSchedule
 from src.utils import clearContent, datetimeToMinutes
+from src.utils.analytic import Analytic
 
 
-class ScheduleDensity:
+class ScheduleDensity(Analytic):
     """
-    Class to compute and visualize schedule density based on course schedule data.
+    ScheduleDensity class to compute and visualize the density of course
+    schedules.
 
-    Attributes
-    ----------
-    conn : Connection
-        A database connection object.
-
-    Methods
-    -------
-    __init__(conn: Connection) -> None:
-        Initialize the class with a database connection.
-
-    compute(courseSchedule: DataFrame) -> dict[str, IntervalTree]:
-        Compute and return a dictionary of IntervalTree objects for each day based on course schedule data.
-
-    plot(its: dict[str, IntervalTree], overlapThreshold: int = 2) -> plotly.graph_objs.Figure:
-        Plot a schedule density graph based on provided IntervalTree data for each day.
-
-    run() -> None:
-        Run the workflow to retrieve course schedule data, compute intervals, plot schedule density, and store results in Streamlit session state.
-    """  # noqa: E501
+    This class provides functionalities to compute intervals and visualize the
+    density of courses within the schedule using interval trees and Plotly for
+    plotting.
+    """
 
     def __init__(self, conn: Connection) -> None:
         """
-        Initialize the class with a database connection.
+        Initialize the ScheduleDensity class with a database connection.
 
-        Parameters
-        ----------
-        conn : Connection
-            A database connection object.
+        This constructor sets up the database connection which will be used to
+        compute and visualize the schedule density data.
 
-        Returns
-        -------
-        None
-
-        Notes
-        -----
-        This constructor initializes the class instance with a provided database connection object.
-
-        Examples
-        --------
-        >>> import sqlite3
-        >>> conn = sqlite3.connect(":memory:")
-        >>> example_instance = MyClass(conn)
-        [Initializes an instance of MyClass with a database connection]
-        """  # noqa: E501
-
+        :param conn: A database connection object.
+        :type conn: Connection
+        """
         self.conn: Connection = conn
 
     def compute(
@@ -69,27 +41,18 @@ class ScheduleDensity:
         courseSchedule: DataFrame,
     ) -> dict[str, IntervalTree]:
         """
-        Compute and return a dictionary of IntervalTree objects for each day based on course schedule data.
+        Compute interval trees for course schedules.
 
-        Parameters
-        ----------
-        courseSchedule : pandas.DataFrame
-            DataFrame containing course schedule data with columns 'TRAD MEETING PATTERN', 'CLASS START TIME', and 'CLASS END TIME'.
+        This method processes the course schedule data to create interval
+        trees for each day of the week, indicating the start and end times of
+        courses.
 
-        Returns
-        -------
-        dict[str, IntervalTree]
-            A dictionary where keys are days ('M', 'T', 'W', 'R', 'F', 'S') and values are IntervalTree objects containing class time intervals.
-
-        Notes
-        -----
-        This method iterates through rows of the provided DataFrame, extracts meeting patterns, start and end times, and constructs IntervalTree objects for each day based on class intervals.
-
-        Examples
-        --------
-        >>> example_instance.compute(courseSchedule)
-        [Returns a dictionary of IntervalTree objects representing class intervals for each day]
-        """  # noqa: E501
+        :param courseSchedule: A DataFrame containing course schedule data.
+        :type courseSchedule: DataFrame
+        :return: A dictionary mapping days of the week to their respective
+            interval trees.
+        :rtype: dict[str, IntervalTree]
+        """
 
         dayIntervalTree: dict[str, IntervalTree] = {
             day: IntervalTree()
@@ -139,31 +102,21 @@ class ScheduleDensity:
         overlapThreshold: int = 2,
     ) -> Figure:
         """
-        Plot a schedule density graph based on provided IntervalTree data for each day.
+        Plot the schedule density based on interval trees.
 
-        Parameters
-        ----------
-        its : dict[str, Interval
-        streamlit.session_state["df"] = None
-        streamlit.session_state["fig"] = Noneree]
-            A dictionary where keys are days ('M', 'T', 'W', 'R', 'F', 'S') and values are IntervalTree objects containing class time intervals.
-        overlapThreshold : int, optional
-            Minimum number of overlapping intervals to consider for color coding (default is 2).
+        This method creates a plotly figure to visualize the density of course
+        schedules, indicating the number of overlapping courses at different
+        times of the day.
 
-        Returns
-        -------
-        plotly.graph_objs.Figure
-            A Plotly figure object representing the schedule density graph.
-
-        Notes
-        -----
-        This method generates a schedule density graph based on the provided IntervalTree data, showing markers for class overlaps across days and times.
-
-        Examples
-        --------
-        >>> example_instance.plot(its, overlapThreshold=3)
-        [Generates and returns a Plotly figure object representing the schedule density graph]
-        """  # noqa: E501
+        :param its: A dictionary mapping days of the week to their respective
+            interval trees.
+        :type its: dict[str, IntervalTree]
+        :param overlapThreshold: The threshold for highlighting overlapping
+            courses, defaults to 2.
+        :type overlapThreshold: int, optional
+        :return: A Plotly figure representing the schedule density.
+        :rtype: Figure
+        """
 
         days: List[str] = ["M", "T", "W", "R", "F", "S"]
         days.reverse()
@@ -244,30 +197,19 @@ class ScheduleDensity:
 
     def run(self) -> None:
         """
-        Run the workflow to retrieve course schedule data, compute intervals, plot schedule density, and store results in Streamlit session state.
+        Run the workflow to compute and visualize the schedule density.
 
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
-
-        Notes
-        -----
         This method performs the following steps:
-        1. Initializes `streamlit.session_state['df']` and `streamlit.session_state['fig']` to None.
-        2. Retrieves course schedule data using the `get` method from the `CourseSchedule` class with optional parameters.
-        3. Computes day-based IntervalTree objects using the `compute` method based on retrieved course schedule data.
-        4. Generates a schedule density plot using the `plot` method with computed IntervalTree objects.
-        5. Stores the retrieved DataFrame `df` and generated figure `fig` in `streamlit.session_state` for use in the Streamlit app.
+        1. Clears existing content.
+        2. Retrieves course schedule data.
+        3. Computes interval trees based on the course schedule data.
+        4. Plots the schedule density using the computed interval trees.
+        5. Updates the Streamlit session state with the resulting figure for
+            visualization.
 
-        Examples
-        --------
-        >>> example_instance.run()
-        [Runs the workflow to retrieve, compute, plot, and store course schedule data in Streamlit session state.]
-        """  # noqa: E501
+        :return: None
+        :rtype: None
+        """
 
         clearContent()
 
