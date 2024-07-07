@@ -7,18 +7,60 @@ from pandas.core.groupby import DataFrameGroupBy
 
 from src.analytics.courseSchedule import CourseSchedule
 from src.utils import clearContent
+from src.utils.analytic import Analytic
 
 
-class ShowCoursesByNumber:
+class ShowCoursesByNumber(Analytic):
+    """
+    ShowCoursesByNumber class to display courses grouped by their course
+    number.
+
+    This class provides functionalities to compute and visualize courses that
+    share the same course number.
+    """
+
     def __init__(self, conn: Connection) -> None:
+        """
+        Initialize the ShowCoursesByNumber class with a database connection.
+
+        This constructor sets up the database connection which will be used to
+        compute and visualize the courses grouped by their course number.
+
+        :param conn: A database connection object.
+        :type conn: Connection
+        """
         self.conn: Connection = conn
 
     def compute(self) -> DataFrameGroupBy:
+        """
+        Compute the courses grouped by their course number.
+
+        This method fetches the course schedule data from the database and
+        groups the courses by their fully qualified course number
+        (FQ_CATALOG_NUMBER).
+
+        :return: A DataFrameGroupBy object containing the grouped course
+            schedule data.
+        :rtype: DataFrameGroupBy
+        """
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
         return df.groupby(by="FQ_CATALOG_NUMBER")
 
     def run(self) -> None:
+        """
+        Execute the workflow to compute and display courses grouped by their
+        course number.
+
+        This method performs the following steps:
+        1. Clears existing content.
+        2. Retrieves and groups the course schedule data by course number.
+        3. Updates the Streamlit session state with the resulting data for
+            visualization.
+
+        :return: None
+        :rtype: None
+        """
         clearContent()
 
         streamlit.session_state["analyticTitle"] = (
