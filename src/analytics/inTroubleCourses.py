@@ -101,3 +101,11 @@ class InTroubleCourses(Analytic):
 
         streamlit.session_state["dfList"] = dfList
         streamlit.session_state["dfListTitles"] = dfListTitles
+
+    def plot(self, data: None) -> None:
+        """
+        Empty function required by Analytic ABC
+        :param data: Null
+        :type data: None
+        """
+        pass

@@ -119,3 +119,11 @@ class CourseEnrollmentHealth(Analytic):
             f":{color}[Weighted Enrollments = {amount}]"
             for _, _, color, amount in data
         ]
+
+    def plot(self, data: None) -> None:
+        """
+        Empty function required by Analytic ABC
+        :param data: Null
+        :type data: None
+        """
+        pass

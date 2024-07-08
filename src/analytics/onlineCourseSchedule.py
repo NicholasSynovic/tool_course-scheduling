@@ -73,3 +73,11 @@ class OnlineCourseSchedule(Analytic):
         schedule for online only courses"
         )
         streamlit.session_state["dfList"] = dfs
+
+    def plot(self, data: None) -> None:
+        """
+        Empty function required by Analytic ABC
+        :param data: Null
+        :type data: None
+        """
+        pass

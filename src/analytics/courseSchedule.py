@@ -118,3 +118,11 @@ class CourseSchedule:
         schedule"
         )
         streamlit.session_state["dfList"] = dfs
+
+    def plot(self, data: None) -> None:
+        """
+        Empty function required by Analytic ABC
+        :param data: Null
+        :type data: None
+        """
+        pass

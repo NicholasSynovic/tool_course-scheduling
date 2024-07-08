@@ -83,3 +83,11 @@ class ShowCoursesByNumber(Analytic):
         streamlit.session_state["dfList"] = dfList
         streamlit.session_state["dfListTitles"] = dfListTitles
         streamlit.session_state["dfListSubtitles"] = dfListSubtitles
+
+    def plot(self, data: None) -> None:
+        """
+        Empty function required by Analytic ABC
+        :param data: Null
+        :type data: None
+        """
+        pass
