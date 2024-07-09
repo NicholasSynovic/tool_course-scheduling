@@ -47,21 +47,21 @@ class InTroubleCourses(Analytic):
         :rtype: DataFrameGroupBy
         """
         FILTER_FIELDS: List[str] = [
-            "FQ_CLASS_SECTION",
+            "FQ CLASS SECTION",
             "CLASS TITLE",
             "INSTRUCTOR",
             "ENROLL TOTAL",
             "TRAD MEETING PATTERN",
             "CLASS START TIME",
             "CLASS END TIME",
-            "WEIGHTED_ENROLL_TOTAL",
-            "COMBINED_ID",
+            "WEIGHTED ENROLL TOTAL",
+            "COMBINED ID",
         ]
 
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
         df = df[FILTER_FIELDS]
 
-        return df.groupby(by="COMBINED_ID")
+        return df.groupby(by="COMBINED ID")
 
     def run(self) -> None:
         """
@@ -90,7 +90,7 @@ class InTroubleCourses(Analytic):
 
         group: DataFrame
         for _, group in dfs:
-            group_sum: int = ceil(group["WEIGHTED_ENROLL_TOTAL"].sum())
+            group_sum: int = ceil(group["WEIGHTED ENROLL TOTAL"].sum())
             if group_sum < troubleThreshold:
                 in_trouble_val = next(inTroubleCount)
                 group_color = "green" if group_sum >= 12 else "red"  # for now

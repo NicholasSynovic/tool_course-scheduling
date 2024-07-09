@@ -48,12 +48,12 @@ class TeachingDistributionByWeightedEnrollment(Analytic):
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
         data: Series = (
-            df.groupby(by="INSTRUCTOR")["WEIGHTED_ENROLL_TOTAL"]
+            df.groupby(by="INSTRUCTOR")["WEIGHTED ENROLL TOTAL"]
             .sum()
             .reset_index()
         )
 
-        return data.sort_values(by="WEIGHTED_ENROLL_TOTAL", ascending=False)
+        return data.sort_values(by="WEIGHTED ENROLL TOTAL", ascending=False)
 
     def plot(self, data: Series) -> Figure:
         """
@@ -71,12 +71,12 @@ class TeachingDistributionByWeightedEnrollment(Analytic):
         """
         fig: Figure = px.bar(
             data,
-            x="WEIGHTED_ENROLL_TOTAL",
+            x="WEIGHTED ENROLL TOTAL",
             y="INSTRUCTOR",
             orientation="h",  # Horizontal bar chart
             title="Total Weighted Enrollment per Instructor",
             labels={
-                "WEIGHTED_ENROLL_TOTAL": "Total Weighted Enrollment (courses, not SCH)",  # noqa: E501
+                "WEIGHTED ENROLL TOTAL": "Total Weighted Enrollment (courses, not SCH)",  # noqa: E501
                 "INSTRUCTOR": "Instructor",
             },
             height=600,  # Adjust the height of the plot as needed

@@ -70,7 +70,7 @@ class InstructorAssignments(Analytic):
         instructor: str
         df: DataFrame
         for instructor, df in dfs:
-            group: DataFrameGroupBy = df.groupby(by="COMBINED_ID")
+            group: DataFrameGroupBy = df.groupby(by="COMBINED ID")
 
             _df: DataFrame
             for _, _df in group:

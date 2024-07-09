@@ -55,7 +55,7 @@ class CourseEnrollmentHealth(Analytic):
         data: List[Tuple[str, DataFrame, str]] = []
 
         FILTER_FIELDS: List[str] = [
-            "FQ_CLASS_SECTION",
+            "FQ CLASS SECTION",
             "CLASS TITLE",
             "INSTRUCTOR",
             "ENROLL TOTAL",
@@ -68,12 +68,12 @@ class CourseEnrollmentHealth(Analytic):
 
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
-        dfs: DataFrameGroupBy = df.groupby(by="COMBINED_ID")
+        dfs: DataFrameGroupBy = df.groupby(by="COMBINED ID")
 
         name: str
         group: DataFrame
         for name, group in dfs:
-            report.append((group["WEIGHTED_ENROLL_TOTAL"].sum(), name, group))
+            report.append((group["WEIGHTED ENROLL TOTAL"].sum(), name, group))
 
         report = sorted(report, key=lambda tup: tup[0])
 

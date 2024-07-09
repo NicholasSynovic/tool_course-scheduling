@@ -45,7 +45,7 @@ class ShowCoursesByNumber(Analytic):
         """
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
-        return df.groupby(by="FQ_CATALOG_NUMBER")
+        return df.groupby(by="FQ CATALOG NUMBER")
 
     def run(self) -> None:
         """

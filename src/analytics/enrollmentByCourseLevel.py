@@ -72,12 +72,12 @@ class EnrollmentByCourseLevel(Analytic):
                 break
 
             course_enrollment = (
-                df.groupby("FQ_CATALOG_NUMBER")["WEIGHTED_ENROLL_TOTAL"]
+                df.groupby("FQ CATALOG NUMBER")["WEIGHTED ENROLL TOTAL"]
                 .sum()
                 .reset_index()
             )
             course_enrollment = course_enrollment.sort_values(
-                by="WEIGHTED_ENROLL_TOTAL", ascending=False
+                by="WEIGHTED ENROLL TOTAL", ascending=False
             )
 
             # Create Plotly bar chart
@@ -85,11 +85,11 @@ class EnrollmentByCourseLevel(Analytic):
 
             fig.add_trace(
                 go.Bar(
-                    y=course_enrollment["FQ_CATALOG_NUMBER"],
-                    x=course_enrollment["WEIGHTED_ENROLL_TOTAL"],
+                    y=course_enrollment["FQ CATALOG NUMBER"],
+                    x=course_enrollment["WEIGHTED ENROLL TOTAL"],
                     orientation="h",
                     marker=dict(
-                        color=course_enrollment["WEIGHTED_ENROLL_TOTAL"],
+                        color=course_enrollment["WEIGHTED ENROLL TOTAL"],
                         colorscale="Viridis",
                         showscale=True,
                         colorbar=dict(title="Weighted Enrollment"),
@@ -109,7 +109,7 @@ class EnrollmentByCourseLevel(Analytic):
 
             # Calculate and plot the average weighted enrollment
             average_enrollment = course_enrollment[
-                "WEIGHTED_ENROLL_TOTAL"
+                "WEIGHTED ENROLL TOTAL"
             ].mean()
             fig.add_vline(
                 x=average_enrollment,
