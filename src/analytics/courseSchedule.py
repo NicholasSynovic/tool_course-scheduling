@@ -70,7 +70,7 @@ class CourseSchedule:
         )
 
         query: str = (
-            """SELECT SUBJECT, WEIGHTED_ENROLL_TOTAL, "CATALOG NUMBER", SUBJECT || '-' || "CATALOG NUMBER" as FQ_CATALOG_NUMBER, "CATALOG NUMBER" || '-' || SECTION as FQ_CLASS_SECTION, "CLASS TITLE", INSTRUCTOR, "ENROLL TOTAL", "TRAD MEETING PATTERN", "CLASS START TIME", "CLASS END TIME", "UNIT CLASS DURATION", "INSTRUCTIONAL TIME", FACILITY, '(' || INSTRUCTOR || ',' || FACILITY || ',' || "MEETING PATTERN" || ',' || "CLASS START TIME" || ',' || "CLASS END TIME" || ')' as COMBINED_ID FROM schedule """  # noqa: E501
+            """SELECT SUBJECT, "WEIGHTED ENROLL TOTAL", "CATALOG NUMBER", "FQ CATALOG NUMBER", "FQ CLASS SECTION", "CLASS TITLE", INSTRUCTOR, "ENROLL TOTAL", "TRAD MEETING PATTERN", "CLASS START TIME", "CLASS END TIME", "UNIT CLASS DURATION", "INSTRUCTIONAL TIME", FACILITY, "COMBINED ID" FROM schedule """  # noqa: E501
         )
 
         query = query + whereClasues + ";"
@@ -79,16 +79,6 @@ class CourseSchedule:
         df: DataFrame = pandas.read_sql_query(
             sql=query,  # nosec
             con=self.conn,
-        )
-
-        df.drop_duplicates(
-            subset=["FQ_CLASS_SECTION"],
-            inplace=True,
-            ignore_index=True,
-        )
-
-        df["COMBINED_ID"] = df["COMBINED_ID"].fillna(
-            value="(UNKNOWN, N/A, N/A)",
         )
 
         df = df[df["ENROLL TOTAL"] >= minimumEnrollment]

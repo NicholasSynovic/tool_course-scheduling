@@ -89,7 +89,18 @@ def _computeWeightedSchedule(row: Series):
     credits = 3
     if row["CATALOG NUMBER"] in set(["395"]):
         credits = 1
-    return int(credits * row["WEIGHTED_ENROLL_TOTAL"])
+    return int(credits * row["WEIGHTED ENROLL TOTAL"])
+
+
+def _createCombinedID(row: Series) -> str:
+    instructor: str = row["INSTRUCTOR"]
+    facility: str = row["FACILITY"]
+    meetingPattern: str = row["TRAD MEETING PATTERN"]
+
+    startTime: str = row["CLASS START TIME"]
+    endTime: str = row["CLASS END TIME"]
+
+    return f"({instructor},{facility},{meetingPattern},{startTime},{endTime})"
 
 
 def readExcelToDB(uf: UploadedFile, dbPath: str = ":memory:") -> Connection:
@@ -112,6 +123,16 @@ def readExcelToDB(uf: UploadedFile, dbPath: str = ":memory:") -> Connection:
     df: DataFrame = read_excel(io=uf, engine="openpyxl")
 
     df["INSTRUCTOR"] = df["INSTRUCTOR"].fillna(value="Turing,Alan")
+    df["FACILITY"] = df["FACILITY"].fillna(value="Doyole Hall")
+
+    df["FQ CATALOG NUMBER"] = df["SUBJECT"] + "-" + df["CATALOG NUMBER"]
+    df["FQ CLASS SECTION"] = df["CATALOG NUMBER"] + "-" + df["SECTION"]
+
+    df.drop_duplicates(
+        subset=["FQ CLASS SECTION"],
+        inplace=True,
+        ignore_index=True,
+    )
 
     df["CLASS START TIME"] = pandas.to_datetime(
         df["CLASS START TIME"],
@@ -126,29 +147,24 @@ def readExcelToDB(uf: UploadedFile, dbPath: str = ":memory:") -> Connection:
     df["TRAD MEETING PATTERN"] = (
         df["MEETING PATTERN"]
         .replace("TR", "R")
+        .replace("TTR", "TR")
         .replace("SA", "S")
         .replace("SU", "X")
+        .fillna("No Meeting Pattern")
     )
 
-    df["UNIT CLASS DURATION"] = df.apply(
-        _computeTotalTime,
-        axis=1,
-    )
+    df["UNIT CLASS DURATION"] = df.apply(_computeTotalTime, axis=1)
 
-    df["INSTRUCTIONAL TIME"] = df.apply(
-        _computeInstructionalTime,
-        axis=1,
-    )
+    df["COMBINED ID"] = df.apply(_createCombinedID, axis=1)
 
-    df["WEIGHTED_ENROLL_TOTAL"] = df.apply(
+    df["INSTRUCTIONAL TIME"] = df.apply(_computeInstructionalTime, axis=1)
+
+    df["WEIGHTED ENROLL TOTAL"] = df.apply(
         _computeWeightedEnrollment,
         axis=1,
     )
 
-    df["WEIGHTED_SCH_TOTAL"] = df.apply(
-        _computeWeightedSchedule,
-        axis=1,
-    )
+    df["WEIGHTED SCH TOTAL"] = df.apply(_computeWeightedSchedule, axis=1)
 
     df.to_sql(
         name="schedule",
