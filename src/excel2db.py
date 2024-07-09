@@ -111,7 +111,7 @@ def readExcelToDB(uf: UploadedFile, dbPath: str = ":memory:") -> Connection:
 
     df: DataFrame = read_excel(io=uf, engine="openpyxl")
 
-    df["INSTRUCTOR"] = df["INSTRUCTOR"].fillna(value="UNKNOWN")
+    df["INSTRUCTOR"] = df["INSTRUCTOR"].fillna(value="Alan Turing")
 
     df["CLASS START TIME"] = pandas.to_datetime(
         df["CLASS START TIME"],
