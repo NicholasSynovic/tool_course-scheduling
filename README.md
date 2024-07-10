@@ -1,4 +1,24 @@
-# Project Name
+# Instructions
+
+- Create virtual environment
+
+`make create-dev`
+
+- Build and install app
+
+```shell
+source env/bin/activate
+make build
+```
+
+- Run app
+
+```shell
+source env/bin/activate
+streamlit run src/main.py
+```
+
+<!-- # Project Name
 
 > Project description one-liner
 
@@ -20,4 +40,4 @@ Steps describing how to install the software
 
 ## How to Run
 
-Instructions on how to run the software
+Instructions on how to run the software -->
