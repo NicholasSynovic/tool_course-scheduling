@@ -1,6 +1,6 @@
 from sqlite3 import Connection
 from typing import List
-
+import pandas as pd
 import streamlit
 from pandas import DataFrame, Series
 from plotly import express
@@ -36,28 +36,28 @@ class AssignmentsPerFaculty(Analytic):
 
     def compute(self) -> DataFrame:
         """
-        Compute the number of courses taught by each instructor.
+        Compute the number of assignments for each instructor.
 
-        This method fetches the course schedule from the database, calculates
-        the number of courses taught by each instructor, and returns this
-        information as a DataFrame. Instructors with the name "UNKNOWN" are
-        excluded from the final DataFrame.
+        This method takes a course schedule DataFrame, groups the data by
+        "INSTRUCTOR" and "COMBINED ID", counts the number of assignments for
+        each instructor, and returns this information as a DataFrame.
+        Instructors with the name "UNKNOWN" are excluded from the final DataFrame.
 
-        :return: A DataFrame containing the number of courses taught by each
-            instructor.
+        :param courseSchedule: A DataFrame containing the course schedule.
+        :return: A DataFrame containing the number of assignments for each
+        instructor.
         :rtype: DataFrame
         """
+        
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
-        data: Series[int] = df["INSTRUCTOR"].value_counts(
-            sort=True,
-            ascending=False,
-        )
-
-        dataDF: DataFrame = data.reset_index()
-        dataDF.columns = ["Instructor Name", "Number of Courses"]
+        dataDF = df.groupby('INSTRUCTOR')['COMBINED ID'].nunique().reset_index()
+        dataDF.columns = ['Instructor Name', 'Number of Courses']
+            
 
         return dataDF[dataDF["Instructor Name"] != "UNKNOWN"]
+
+
 
     def plot(self, df: DataFrame) -> Figure:
         """
