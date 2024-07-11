@@ -1,8 +1,8 @@
 from sqlite3 import Connection
 from typing import List
-import pandas as pd
+
 import streamlit
-from pandas import DataFrame, Series
+from pandas import DataFrame
 from plotly import express
 from plotly.graph_objects import Figure
 
@@ -47,17 +47,16 @@ class AssignmentsPerFaculty(Analytic):
         :return: A DataFrame containing the number of assignments for each
         instructor.
         :rtype: DataFrame
-        """
-        
+        """  # noqa: E501
+
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
-        dataDF = df.groupby('INSTRUCTOR')['COMBINED ID'].nunique().reset_index()
-        dataDF.columns = ['Instructor Name', 'Number of Courses']
-            
+        dataDF = (
+            df.groupby("INSTRUCTOR")["COMBINED ID"].nunique().reset_index()
+        )
+        dataDF.columns = ["Instructor Name", "Number of Courses"]
 
         return dataDF[dataDF["Instructor Name"] != "UNKNOWN"]
-
-
 
     def plot(self, df: DataFrame) -> Figure:
         """
@@ -75,6 +74,8 @@ class AssignmentsPerFaculty(Analytic):
         :return: A Plotly Figure object representing the horizontal bar chart.
         :rtype: plotly.graph_objs.Figure
         """
+        df.sort_values(by="Number of Courses", ascending=False, inplace=True)
+
         fig: Figure = express.bar(
             data_frame=df,
             y="Instructor Name",
