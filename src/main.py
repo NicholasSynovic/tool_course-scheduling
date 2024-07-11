@@ -18,6 +18,7 @@ from src.analytics.showCoursesByNumber import ShowCoursesByNumber
 from src.analytics.teachingDistributionByWeightedEnrollment import (
     TeachingDistributionByWeightedEnrollment,
 )
+from src.analytics.zeroEnrollment import zeroEnrollment
 from src.excel2db import readExcelToDB
 from src.utils import initialState, resetState
 
@@ -34,6 +35,8 @@ def main() -> None:
     :return: None
     :rtype: None
     """
+    print(AssignmentsPerFaculty)
+
     initialState()
 
     streamlit.title(body="CS Dept. Course Scheduler Utility")
@@ -94,6 +97,13 @@ def main() -> None:
                 label="Instructor Assignments",
                 use_container_width=True,
                 on_click=InstructorAssignments(
+                    conn=streamlit.session_state["dbConn"]
+                ).run,
+            )
+            streamlit.button(
+                label="Courses with No Enrollments",
+                use_container_width=True,
+                on_click=zeroEnrollment(
                     conn=streamlit.session_state["dbConn"]
                 ).run,
             )
@@ -170,7 +180,7 @@ def main() -> None:
 
                 if streamlit.session_state["dfListTitles"] is not None:
                     streamlit.markdown(
-                        body=f"### \
+                        body=f"##### \
                         {streamlit.session_state['dfListTitles'].pop(0)}"
                     )
 

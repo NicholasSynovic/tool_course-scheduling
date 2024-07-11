@@ -1,6 +1,6 @@
 from sqlite3 import Connection
 from typing import List
-
+from collections import defaultdict
 import streamlit
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
@@ -67,6 +67,7 @@ class InstructorAssignments(Analytic):
             "Show instructor assignments"
         )
 
+        instructor_counts = defaultdict(int)
         instructor: str
         df: DataFrame
         for instructor, df in dfs:
@@ -75,7 +76,13 @@ class InstructorAssignments(Analytic):
             _df: DataFrame
             for _, _df in group:
                 dfList.append(_df)
-                dfListTitles.append(instructor)
+                instructor_counts[instructor] += 1
+                
+        dfListTitles = []
+
+        for instructor, count in instructor_counts.items():
+            for i in range(1, count + 1):
+                dfListTitles.append(f"{instructor} ({i}/{count})")
 
         streamlit.session_state["dfList"] = dfList
         streamlit.session_state["dfListTitles"] = dfListTitles
