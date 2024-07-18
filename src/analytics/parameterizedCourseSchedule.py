@@ -1,6 +1,8 @@
-import streamlit as st
 import pandas as pd
+import streamlit as st
+
 from src.analytics.courseSchedule import CourseSchedule
+
 
 class FilterCourseSchedule(CourseSchedule):
     """
@@ -33,7 +35,10 @@ class FilterCourseSchedule(CourseSchedule):
         df = self.compute()
 
         for column in df.columns:
-            if pd.api.types.is_numeric_dtype(df[column]):
+            if column in ["COMBINED ID", "INSTRUCTIONAL TIME", "CATALOG NUMBER"]:
+                continue  # Skip the filters for these columns
+            
+            elif pd.api.types.is_numeric_dtype(df[column]):
                 min_val = df[column].min()
                 max_val = df[column].max()
                 if min_val != max_val:  # Ensure valid range for slider
@@ -74,4 +79,3 @@ class FilterCourseSchedule(CourseSchedule):
         Display the filtered DataFrame in Streamlit.
         """
         st.dataframe(df)
-

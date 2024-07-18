@@ -9,11 +9,11 @@ from streamlit.runtime.uploaded_file_manager import UploadedFile
 from src.analytics.assignmentsPerFaculty import AssignmentsPerFaculty
 from src.analytics.courseEnrollmentHealth import CourseEnrollmentHealth
 from src.analytics.courseSchedule import CourseSchedule
-from src.analytics.parameterizedCourseSchedule import FilterCourseSchedule
 from src.analytics.enrollmentByCourseLevel import EnrollmentByCourseLevel
 from src.analytics.instructorAssignments import InstructorAssignments
 from src.analytics.inTroubleCourses import InTroubleCourses
 from src.analytics.onlineCourseSchedule import OnlineCourseSchedule
+from src.analytics.parameterizedCourseSchedule import FilterCourseSchedule
 from src.analytics.scheduleDensity import ScheduleDensity
 from src.analytics.showCoursesByNumber import ShowCoursesByNumber
 from src.analytics.teachingDistributionByWeightedEnrollment import (
@@ -148,7 +148,9 @@ def main() -> None:
             streamlit.button(
                 label="Filter Course Schedule",
                 use_container_width=True,
-                on_click=lambda: streamlit.session_state.update({"current_page": "filter"})
+                on_click=lambda: streamlit.session_state.update(
+                    {"current_page": "filter"}
+                ),
             )
 
         streamlit.divider()

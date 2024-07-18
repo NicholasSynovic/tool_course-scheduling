@@ -93,11 +93,11 @@ class CourseEnrollmentHealth(Analytic):
 
             if groupSum > 32:
                 color = "green"
-            
+
             if groupSum > 40:
                 color = "green"
 
-            #formatted_text = f'<span style="color: {color};">{entry[1]} [Weighted Enrollments = {groupSum}]</span>'
+            # formatted_text = f'<span style="color: {color};">{entry[1]} [Weighted Enrollments = {groupSum}]</span>'
             data.append((entry[1], filteredDF, color, groupSum))
 
         return data
