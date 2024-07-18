@@ -86,9 +86,6 @@ class TeachingDistributionByWeightedEnrollment(Analytic):
         fig.update_layout(
             xaxis_title="Total Weighted Enrollment (courses, not SCH)",
             yaxis_title="Instructor",
-            yaxis={
-                "categoryorder": "total ascending"
-            },  # Sort the y-axis by the total enrollment
             plot_bgcolor="white",
         )
 
