@@ -13,6 +13,7 @@ from src.analytics.enrollmentByCourseLevel import EnrollmentByCourseLevel
 from src.analytics.instructorAssignments import InstructorAssignments
 from src.analytics.inTroubleCourses import InTroubleCourses
 from src.analytics.onlineCourseSchedule import OnlineCourseSchedule
+from src.analytics.parameterizedCourseSchedule import FilterCourseSchedule
 from src.analytics.scheduleDensity import ScheduleDensity
 from src.analytics.showCoursesByNumber import ShowCoursesByNumber
 from src.analytics.teachingDistributionByWeightedEnrollment import (
@@ -144,6 +145,13 @@ def main() -> None:
                     conn=streamlit.session_state["dbConn"],
                 ).run,
             )
+            streamlit.button(
+                label="Filter Course Schedule",
+                use_container_width=True,
+                on_click=lambda: streamlit.session_state.update(
+                    {"current_page": "filter"}
+                ),
+            )
 
         streamlit.divider()
 
@@ -195,6 +203,11 @@ def main() -> None:
                 )
         except TypeError:
             pass
+    if streamlit.session_state.get("current_page") == "filter":
+        if "dbConn" in streamlit.session_state:
+            FilterCourseSchedule(conn=streamlit.session_state["dbConn"]).run()
+        else:
+            streamlit.error("Please upload a file to continue.")
 
 
 if __name__ == "__main__":
