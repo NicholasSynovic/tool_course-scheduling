@@ -1,3 +1,4 @@
+import os
 from sqlite3 import Connection
 
 import streamlit
@@ -24,25 +25,6 @@ from src.analytics.zeroEnrollment import zeroEnrollment
 from src.excel2db import readExcelToDB
 from src.utils import initialState, resetState
 
-# def readExcelToDB(uf) -> Connection:
-#     # Placeholder for the function to read Excel file to DB
-#     # Assuming 'uf' is either the file path or an UploadedFile object
-#     if isinstance(uf, str):
-#         # If 'uf' is a file path
-#         excel_data = pandas.read_excel(uf)
-#     else:
-#         # If 'uf' is an UploadedFile object
-#         excel_data = pandas.read_excel(uf)
-
-#     # Connect to a SQLite database (or create it if it doesn't exist)
-#     conn = sqlite3.connect(":memory:", check_same_thread=False)  # or use a file-based database # noqa: E501
-
-#     # Load the DataFrame into the SQLite database
-#     excel_data.to_sql("course_schedule", conn, if_exists="replace", index=False) # noqa: E501
-
-#     return conn
-# noqa E501
-
 
 def main() -> None:
     """
@@ -62,39 +44,29 @@ def main() -> None:
 
     streamlit.title(body="CS Dept. Course Scheduler Utility")
 
-    # project_folder = "../"  # Modify this path as necessary
-    # existing_files = [f for f in os.listdir(project_folder) if f.endswith('.xlsx')] # noqa: E501
+    projectFolder = "../"  # Modify this path as necessary
+    existingFiles = [
+        f for f in os.listdir(projectFolder) if f.endswith(".xlsx")
+    ]  # noqa: E501
 
-    # streamlit.write("### Select an existing file or upload a new one")
-    # selected_file = streamlit.selectbox("Select a file from the project folder:", existing_files) # noqa: E501
+    streamlit.write("### Select an existing file or upload a new one")
+    selectedFile = streamlit.selectbox(
+        "Select a file from the project folder:", existingFiles
+    )  # noqa: E501
 
-    # uploaded_file: UploadedFile = streamlit.file_uploader(
-    # label="Upload a Locus Course Schedule Export (.xlsx) file",
-    # type=["xlsx"],
-    # accept_multiple_files=False,
-    # ) #noqa E501
-
-    # # Handle the file selection
-    # if selected_file:
-    #     file_path = os.path.join(project_folder, selected_file)
-    #     conn: Connection = readExcelToDB(uf=file_path)
-    #     streamlit.session_state["dbConn"] = conn
-    #     streamlit.session_state["showAnalyticButtons"] = True
-    # elif uploaded_file:
-    #     conn: Connection = readExcelToDB(uf=uploaded_file)
-    #     streamlit.session_state["dbConn"] = conn
-    #     streamlit.session_state["showAnalyticButtons"] = True
-    # else:
-    #     resetState()
-
-    excelFile: UploadedFile = streamlit.file_uploader(
+    uploadedFile: UploadedFile = streamlit.file_uploader(
         label="Upload a Locus Course Schedule Export (.xlsx) file",
         type=["xlsx"],
         accept_multiple_files=False,
-    )
+    )  # noqa E501
 
-    if excelFile is not None:
-        conn: Connection = readExcelToDB(uf=excelFile)
+    if selectedFile:
+        filePath = os.path.join(projectFolder, selectedFile)
+        conn: Connection = readExcelToDB(uf=filePath)
+        streamlit.session_state["dbConn"] = conn
+        streamlit.session_state["showAnalyticButtons"] = True
+    elif uploadedFile:
+        conn: Connection = readExcelToDB(uf=uploadedFile)
         streamlit.session_state["dbConn"] = conn
         streamlit.session_state["showAnalyticButtons"] = True
     else:
@@ -190,12 +162,18 @@ def main() -> None:
                     conn=streamlit.session_state["dbConn"],
                 ).run,
             )
+            # streamlit.button(
+            #     label="Filter Course Schedule",
+            #     use_container_width=True,
+            #     on_click=lambda: streamlit.session_state.update(
+            #         {"current_page": "filter"}
+            #     ),
             streamlit.button(
                 label="Filter Course Schedule",
                 use_container_width=True,
-                on_click=lambda: streamlit.session_state.update(
-                    {"current_page": "filter"}
-                ),
+                on_click=FilterCourseSchedule(
+                    conn=streamlit.session_state["dbConn"]
+                ).run,
             )
             streamlit.button(
                 label="School Credit Hours",  # New button

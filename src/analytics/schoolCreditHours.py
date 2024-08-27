@@ -42,17 +42,17 @@ class SchoolCreditHours(Analytic):
             df["CATALOG NUMBER"].astype(str).str[:3].astype(int) // 100 * 100
         )
 
-        grouped_df = (
+        groupedDF = (
             df.groupby("COURSE LEVEL")
             .agg({"ENROLL TOTAL": "sum", "WEIGHTED ENROLL TOTAL": "sum"})
             .reset_index()
         )
 
         # by 3 credits
-        grouped_df["ENROLL TOTAL"] *= 3
-        grouped_df["WEIGHTED ENROLL TOTAL"] *= 3
+        groupedDF["ENROLL TOTAL"] *= 3
+        groupedDF["WEIGHTED ENROLL TOTAL"] *= 3
 
-        return grouped_df
+        return groupedDF
 
     def run(self) -> None:
 
