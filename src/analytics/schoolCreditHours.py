@@ -1,9 +1,10 @@
 from sqlite3 import Connection
 from typing import List, Tuple
 
-import matplotlib.pyplot as plt
+import plotly.graph_objs as go
 import streamlit
 from pandas import DataFrame
+from plotly.graph_objects import Figure
 
 from src.analytics.courseSchedule import CourseSchedule
 from src.utils.analytic import Analytic
@@ -25,10 +26,9 @@ class SchoolCreditHours(Analytic):
         self.conn = conn
 
     def compute(self) -> List[Tuple[str, DataFrame, str, int]]:
-        # Fetch the course schedule data
+
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
-        # Ensure the necessary columns are present
         if (
             "ENROLL TOTAL" not in df.columns
             or "WEIGHTED ENROLL TOTAL" not in df.columns
@@ -38,46 +38,65 @@ class SchoolCreditHours(Analytic):
                 "Necessary columns ('ENROLL TOTAL', 'WEIGHTED ENROLL TOTAL', 'CATALOG NUMBER') are missing from the data."  # noqa: E501
             )
 
-        # Derive course level from 'CATALOG NUMBER'
         df["COURSE LEVEL"] = (
             df["CATALOG NUMBER"].astype(str).str[:3].astype(int) // 100 * 100
         )
 
-        # Group by course level and sum the enrollments
         grouped_df = (
             df.groupby("COURSE LEVEL")
             .agg({"ENROLL TOTAL": "sum", "WEIGHTED ENROLL TOTAL": "sum"})
             .reset_index()
         )
 
+        # by 3 credits
+        grouped_df["ENROLL TOTAL"] *= 3
+        grouped_df["WEIGHTED ENROLL TOTAL"] *= 3
+
         return grouped_df
 
     def run(self) -> None:
-        data: DataFrame = self.compute()
 
-        # Update the Streamlit session state for visualization
+        data: DataFrame = self.compute()
+        fig: Figure = self.plot(data)
+
         streamlit.session_state["analyticTitle"] = "School Credit Hours"
-        streamlit.session_state["analyticSubtitle"] = (
-            "Sum of Course Enrollment and Weighted Enrollment"
-        )
         streamlit.session_state["dfList"] = [data]
         streamlit.session_state["dfListTitles"] = [
-            "Total Enrollment by Course Level"
+            "Total Credit Hours by Course Level"
         ]
-        streamlit.session_state["dfListSubtitles"] = ["Enrollment Data"]
 
-        # Optionally, trigger the plot function
-        self.plot(data)
+        streamlit.session_state["figList"] = [fig]
 
-    def plot(self, data: None) -> None:
+    def plot(self, data: DataFrame) -> Figure:
 
-        data.plot(
-            kind="bar",
-            x="COURSE LEVEL",
-            y=["ENROLL TOTAL", "WEIGHTED ENROLL TOTAL"],
-        )
-        plt.title("Enrollment by Course Level")
-        plt.xlabel("Course Level")
-        plt.ylabel("Enrollment")
-        plt.xticks(rotation=0)
-        plt.show()
+        if data is not None and not data.empty:
+
+            fig = go.Figure()
+
+            fig.add_trace(
+                go.Bar(
+                    x=data["COURSE LEVEL"],
+                    y=data["ENROLL TOTAL"],
+                    name="Enroll Total",
+                    marker_color="blue",
+                )
+            )
+
+            fig.add_trace(
+                go.Bar(
+                    x=data["COURSE LEVEL"],
+                    y=data["WEIGHTED ENROLL TOTAL"],
+                    name="Weighted Enroll Total",
+                    marker_color="green",
+                )
+            )
+
+            fig.update_layout(
+                title="Enrollment by Course Level",
+                xaxis_title="Course Level",
+                yaxis_title="Enrollment",
+                barmode="group",
+                width=800,
+                height=600,
+            )
+        return fig
