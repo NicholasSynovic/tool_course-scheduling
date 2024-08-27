@@ -1,4 +1,5 @@
 from datetime import datetime
+from sqlite3 import Connection
 from typing import List
 
 import streamlit
@@ -29,6 +30,11 @@ def datetimeToMinutes(dt: datetime) -> int:
     :rtype: int
     """
     return dt.hour * 60 + dt.minute
+
+
+def readExcelToDB(uf) -> Connection:
+    # Placeholder for the function to read Excel file to DB
+    pass
 
 
 def initialState() -> None:
