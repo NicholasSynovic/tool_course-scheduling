@@ -43,7 +43,7 @@ class CourseSchedule:
             "COMP": """SUBJECT = 'COMP' AND "CATALOG NUMBER" NOT IN ('391', '398', '490', '499', '605') AND "CATALOG NUMBER" NOT IN ('215', '231', '331', '431', '381', '386', '383', '483') AND SECTION NOT IN ('01L', '02L', '03L', '04L', '05L', '06L', '700N')"""  # noqa: E501
         }
 
-    def compute(self) -> DataFrame:
+    def compute(self, filterZeroEnrollment: bool = False) -> DataFrame:
         """
         Compute the course schedule data filtered by department and minimum
         enrollment.
@@ -85,6 +85,9 @@ class CourseSchedule:
 
         df.reset_index(drop=True, inplace=True)
 
+        if filterZeroEnrollment:
+            df = df[df["ENROLL TOTAL"] > 0]
+
         return df
 
     def run(self) -> None:
@@ -100,12 +103,20 @@ class CourseSchedule:
 
         clearContent()
 
-        dfs: List[DataFrame] = [self.compute()]
+        dfs: List[DataFrame] = [
+            self.compute(
+                filterZeroEnrollment=streamlit.session_state["filterZero"]
+            )
+        ]
 
         streamlit.session_state["analyticTitle"] = "Course Schedule"
         streamlit.session_state["analyticSubtitle"] = (
             "The current course \
         schedule"
+        )
+
+        streamlit.session_state["filterZero"] = streamlit.checkbox(
+            "Filter out rows with ENROLL TOTAL as 0", value=False
         )
 
         streamlit.session_state["dfList"] = dfs

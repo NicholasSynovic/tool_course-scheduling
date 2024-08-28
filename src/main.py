@@ -38,7 +38,7 @@ def main() -> None:
     :return: None
     :rtype: None
     """
-    print(AssignmentsPerFaculty)
+    # print(AssignmentsPerFaculty)
 
     initialState()
 
@@ -176,12 +176,15 @@ def main() -> None:
                 ).run,
             )
             streamlit.button(
-                label="School Credit Hours",  # New button
+                label="School Credit Hours",
                 use_container_width=True,
                 on_click=SchoolCreditHours(
                     conn=streamlit.session_state["dbConn"]
                 ).run,
             )
+
+        # if "filterZero" not in streamlit.session_state:
+        #     streamlit.session_state["filterZero"] = False  #Default val
 
         streamlit.divider()
 
@@ -194,6 +197,23 @@ def main() -> None:
             streamlit.markdown(
                 body=f"> {streamlit.session_state['analyticSubtitle']}"
             )
+
+        if "filterZero" not in streamlit.session_state:
+            streamlit.session_state["filterZero"] = False  # Default val
+
+        if streamlit.session_state["filterZero"] is not None:
+            streamlit.session_state["filterZero"] = streamlit.checkbox(
+                "Filter out rows with ENROLL TOTAL as 0",
+                value=streamlit.session_state["filterZero"],
+                key="filterZeroCheckbox",
+            )
+
+            filter_message = (
+                "Filtering out rows with ENROLL TOTAL as 0 is enabled. To add rows with 0 back in, uncheck the box and re-select the widget."  # noqa: E501
+                if streamlit.session_state["filterZero"]
+                else "All rows, including those with ENROLL TOTAL as 0, are displayed. To filter out rows with 0, check the box and re-select the widget."  # noqa: E501
+            )
+            streamlit.markdown(f"> {filter_message}")
 
         try:
             fig: Figure

@@ -32,7 +32,9 @@ class CourseEnrollmentHealth(Analytic):
         """
         self.conn = conn
 
-    def compute(self) -> List[Tuple[str, DataFrame, str, int]]:
+    def compute(
+        self, filterZeroEnrollment: bool = False
+    ) -> List[Tuple[str, DataFrame, str, int]]:
         """
         Compute and return a list of tuples containing course enrollment
         health data.
@@ -68,6 +70,9 @@ class CourseEnrollmentHealth(Analytic):
 
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
+        if filterZeroEnrollment:
+            df = df[df["ENROLL TOTAL"] > 0]
+
         dfs: DataFrameGroupBy = df.groupby(by="COMBINED ID")
 
         name: str
@@ -97,7 +102,7 @@ class CourseEnrollmentHealth(Analytic):
             if groupSum > 40:
                 color = "green"
 
-            # formatted_text = f'<span style="color: {color};">{entry[1]} [Weighted Enrollments = {groupSum}]</span>'
+            # formatted_text = f'<span style="color: {color};">{entry[1]} [Weighted Enrollments = {groupSum}]</span>' # noqa: E501
             data.append((entry[1], filteredDF, color, groupSum))
 
         return data
@@ -112,7 +117,9 @@ class CourseEnrollmentHealth(Analytic):
 
         :return: None
         """
-        data: List[Tuple[str, DataFrame, str, int]] = self.compute()
+        data: List[Tuple[str, DataFrame, str, int]] = self.compute(
+            filterZeroEnrollment=streamlit.session_state["filterZero"]
+        )
 
         clearContent()
 
@@ -120,6 +127,9 @@ class CourseEnrollmentHealth(Analytic):
 
         streamlit.session_state["analyticTitle"] = "Course Enrollment Health"
         streamlit.session_state["analyticSubtitle"] = "Health of each course"
+        streamlit.session_state["filterZero"] = streamlit.checkbox(
+            "Filter out rows with ENROLL TOTAL as 0", value=False
+        )
         streamlit.session_state["dfList"] = dfs
         streamlit.session_state["dfListTitles"] = [datum[0] for datum in data]
         streamlit.session_state["dfListSubtitles"] = [

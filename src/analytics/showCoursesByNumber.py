@@ -31,7 +31,7 @@ class ShowCoursesByNumber(Analytic):
         """
         self.conn: Connection = conn
 
-    def compute(self) -> DataFrameGroupBy:
+    def compute(self, filterZeroEnrollment: bool = False) -> DataFrameGroupBy:
         """
         Compute the courses grouped by their course number.
 
@@ -44,6 +44,9 @@ class ShowCoursesByNumber(Analytic):
         :rtype: DataFrameGroupBy
         """
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
+
+        if filterZeroEnrollment:
+            df = df[df["ENROLL TOTAL"] > 0]
 
         return df.groupby(by="FQ CATALOG NUMBER")
 
@@ -75,10 +78,16 @@ class ShowCoursesByNumber(Analytic):
         dfListSubtitles: List[str] = []
 
         df: DataFrame
-        for name, df in self.compute():
+        for name, df in self.compute(
+            filterZeroEnrollment=streamlit.session_state["filterZero"]
+        ):
             dfList.append(df)
             dfListTitles.append(name)
             dfListSubtitles.append(df["CLASS TITLE"].unique()[0])
+
+        streamlit.session_state["filterZero"] = streamlit.checkbox(
+            "Filter out rows with ENROLL TOTAL as 0", value=False
+        )
 
         streamlit.session_state["dfList"] = dfList
         streamlit.session_state["dfListTitles"] = dfListTitles
