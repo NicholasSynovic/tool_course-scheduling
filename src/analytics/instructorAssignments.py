@@ -1,6 +1,7 @@
+from collections import defaultdict
 from sqlite3 import Connection
 from typing import List
-from collections import defaultdict
+
 import streamlit
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
@@ -31,7 +32,7 @@ class InstructorAssignments(Analytic):
         """
         self.conn: Connection = conn
 
-    def compute(self) -> DataFrameGroupBy:
+    def compute(self, filterZeroEnrollment: bool = False) -> DataFrameGroupBy:
         """
         Initialize the InstructorAssignments class with a database connection.
 
@@ -42,6 +43,9 @@ class InstructorAssignments(Analytic):
         :type conn: Connection
         """
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
+
+        if filterZeroEnrollment:
+            df = df[df["ENROLL TOTAL"] > 0]
 
         return df.groupby(by="INSTRUCTOR")
 
@@ -60,12 +64,20 @@ class InstructorAssignments(Analytic):
         dfList: List[DataFrame] = []
         dfListTitles: List[str] = []
 
-        dfs: DataFrameGroupBy = self.compute()
+        dfs: DataFrameGroupBy = self.compute(
+            filterZeroEnrollment=streamlit.session_state["filterZero"]
+        )
 
         streamlit.session_state["analyticTitle"] = "Instructor Assignments"
         streamlit.session_state["analyticSubtitle"] = (
             "Show instructor assignments"
         )
+
+        streamlit.session_state["filterZero"] = streamlit.checkbox(
+            "Filter out rows with ENROLL TOTAL as 0", value=False
+        )
+
+        # streamlit.session_state["filterZero"] = False
 
         instructor_counts = defaultdict(int)
         instructor: str
@@ -77,7 +89,7 @@ class InstructorAssignments(Analytic):
             for _, _df in group:
                 dfList.append(_df)
                 instructor_counts[instructor] += 1
-                
+
         dfListTitles = []
 
         for instructor, count in instructor_counts.items():

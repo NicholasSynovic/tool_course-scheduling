@@ -34,7 +34,7 @@ class InTroubleCourses(Analytic):
         """
         self.conn: Connection = conn
 
-    def compute(self) -> DataFrameGroupBy:
+    def compute(self, filterZeroEnrollment: bool = False) -> DataFrameGroupBy:
         """
         Compute the course data and group by combined ID.
 
@@ -61,6 +61,9 @@ class InTroubleCourses(Analytic):
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
         df = df[FILTER_FIELDS]
 
+        if filterZeroEnrollment:
+            df = df[df["ENROLL TOTAL"] > 0]
+
         return df.groupby(by="COMBINED ID")
 
     def run(self) -> None:
@@ -86,7 +89,13 @@ class InTroubleCourses(Analytic):
         troubleThreshold: int = 10
         inTroubleCount: count = count(start=1)
 
-        dfs: DataFrameGroupBy = self.compute()
+        dfs: DataFrameGroupBy = self.compute(
+            filterZeroEnrollment=streamlit.session_state["filterZero"]
+        )
+
+        streamlit.session_state["filterZero"] = streamlit.checkbox(
+            "Filter out rows with ENROLL TOTAL as 0", value=False
+        )
 
         group: DataFrame
         for _, group in dfs:

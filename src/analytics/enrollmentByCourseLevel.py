@@ -45,34 +45,49 @@ class EnrollmentByCourseLevel(Analytic):
         """
         return CourseSchedule(conn=self.conn).compute()
 
-    def plot(self) -> Tuple[str, Figure]:
+    def plot(self) -> List[Tuple[str, go.Figure]]:
         """
         Plot the enrollment data by course level.
 
-        This method creates a series of horizontal bar charts for each course
-        level, showing the weighted enrollment totals. Each plot includes a
-        color scale indicating the weighted enrollment and a vertical line
-        representing the average weighted enrollment.
+        This method creates a bar chart for each course level, showing the
+        weighted enrollment totals. Each plot includes a color scale indicating
+        the weighted enrollment and a vertical line representing the average
+        weighted enrollment.
 
         :return: A list of tuples, each containing a title (str) and a Plotly
             Figure.
-        :rtype: List[Tuple[str, Figure]]
+        :rtype: List[Tuple[str, go.Figure]]
         """
-        figList: Tuple[str, Figure] = []
+        figList: List[Tuple[str, go.Figure]] = []
 
         df: DataFrame = self.compute()
 
-        for level in range(0, 500, 100):
-            this_level = str(level + 100)
-            df = df[df["CATALOG NUMBER"] >= this_level]
-            next_level = str(level + 200)
-            df = df[df["CATALOG NUMBER"] < next_level]
+        if (
+            "CATALOG NUMBER" not in df.columns
+            or "WEIGHTED ENROLL TOTAL" not in df.columns
+        ):
+            raise KeyError(
+                "Necessary columns ('CATALOG NUMBER', 'WEIGHTED ENROLL TOTAL') are missing from the data."  # noqa: E501
+            )
 
-            if len(df) == 0:
-                break
+        df["COURSE LEVEL"] = (
+            df["CATALOG NUMBER"].astype(str).str[:3].astype(int) // 100 * 100
+        )
+
+        grouped_df = (
+            df.groupby("COURSE LEVEL")
+            .agg({"WEIGHTED ENROLL TOTAL": "sum"})
+            .reset_index()
+        )
+
+        for level in grouped_df["COURSE LEVEL"]:
+            level_df = df[df["COURSE LEVEL"] == level]
+
+            if len(level_df) == 0:
+                continue
 
             course_enrollment = (
-                df.groupby("FQ CATALOG NUMBER")["WEIGHTED ENROLL TOTAL"]
+                level_df.groupby("CATALOG NUMBER")["WEIGHTED ENROLL TOTAL"]
                 .sum()
                 .reset_index()
             )
@@ -80,12 +95,11 @@ class EnrollmentByCourseLevel(Analytic):
                 by="WEIGHTED ENROLL TOTAL", ascending=False
             )
 
-            # Create Plotly bar chart
             fig = go.Figure()
 
             fig.add_trace(
                 go.Bar(
-                    y=course_enrollment["FQ CATALOG NUMBER"],
+                    y=course_enrollment["CATALOG NUMBER"],
                     x=course_enrollment["WEIGHTED ENROLL TOTAL"],
                     orientation="h",
                     marker=dict(
@@ -94,10 +108,13 @@ class EnrollmentByCourseLevel(Analytic):
                         showscale=True,
                         colorbar=dict(title="Weighted Enrollment"),
                     ),
+                    # bars are too narrow, can hover over to look at catalog number # noqa: E501
+                    # text=course_enrollment["CATALOG NUMBER"],
+                    # textposition="outside",
                 )
             )
 
-            title: str = f"Enrollment at {this_level}-level"
+            title: str = f"Enrollment at {level}-level"
 
             fig.update_layout(
                 title=title,

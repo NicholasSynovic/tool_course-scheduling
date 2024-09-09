@@ -1,3 +1,4 @@
+import os
 from sqlite3 import Connection
 
 import streamlit
@@ -15,6 +16,7 @@ from src.analytics.inTroubleCourses import InTroubleCourses
 from src.analytics.onlineCourseSchedule import OnlineCourseSchedule
 from src.analytics.parameterizedCourseSchedule import FilterCourseSchedule
 from src.analytics.scheduleDensity import ScheduleDensity
+from src.analytics.schoolCreditHours import SchoolCreditHours
 from src.analytics.showCoursesByNumber import ShowCoursesByNumber
 from src.analytics.teachingDistributionByWeightedEnrollment import (
     TeachingDistributionByWeightedEnrollment,
@@ -36,20 +38,35 @@ def main() -> None:
     :return: None
     :rtype: None
     """
-    print(AssignmentsPerFaculty)
+    # print(AssignmentsPerFaculty)
 
     initialState()
 
     streamlit.title(body="CS Dept. Course Scheduler Utility")
 
-    excelFile: UploadedFile = streamlit.file_uploader(
+    projectFolder = "../"  # Modify this path as necessary
+    existingFiles = [
+        f for f in os.listdir(projectFolder) if f.endswith(".xlsx")
+    ]  # noqa: E501
+
+    streamlit.write("### Select an existing file or upload a new one")
+    selectedFile = streamlit.selectbox(
+        "Select a file from the project folder:", existingFiles
+    )  # noqa: E501
+
+    uploadedFile: UploadedFile = streamlit.file_uploader(
         label="Upload a Locus Course Schedule Export (.xlsx) file",
         type=["xlsx"],
         accept_multiple_files=False,
-    )
+    )  # noqa E501
 
-    if excelFile is not None:
-        conn: Connection = readExcelToDB(uf=excelFile)
+    if selectedFile:
+        filePath = os.path.join(projectFolder, selectedFile)
+        conn: Connection = readExcelToDB(uf=filePath)
+        streamlit.session_state["dbConn"] = conn
+        streamlit.session_state["showAnalyticButtons"] = True
+    elif uploadedFile:
+        conn: Connection = readExcelToDB(uf=uploadedFile)
         streamlit.session_state["dbConn"] = conn
         streamlit.session_state["showAnalyticButtons"] = True
     else:
@@ -145,13 +162,29 @@ def main() -> None:
                     conn=streamlit.session_state["dbConn"],
                 ).run,
             )
+            # streamlit.button(
+            #     label="Filter Course Schedule",
+            #     use_container_width=True,
+            #     on_click=lambda: streamlit.session_state.update(
+            #         {"current_page": "filter"}
+            #     ),
             streamlit.button(
                 label="Filter Course Schedule",
                 use_container_width=True,
-                on_click=lambda: streamlit.session_state.update(
-                    {"current_page": "filter"}
-                ),
+                on_click=FilterCourseSchedule(
+                    conn=streamlit.session_state["dbConn"]
+                ).run,
             )
+            streamlit.button(
+                label="School Credit Hours",
+                use_container_width=True,
+                on_click=SchoolCreditHours(
+                    conn=streamlit.session_state["dbConn"]
+                ).run,
+            )
+
+        # if "filterZero" not in streamlit.session_state:
+        #     streamlit.session_state["filterZero"] = False  #Default val
 
         streamlit.divider()
 
@@ -164,6 +197,23 @@ def main() -> None:
             streamlit.markdown(
                 body=f"> {streamlit.session_state['analyticSubtitle']}"
             )
+
+        if "filterZero" not in streamlit.session_state:
+            streamlit.session_state["filterZero"] = False  # Default val
+
+        if streamlit.session_state["filterZero"] is not None:
+            streamlit.session_state["filterZero"] = streamlit.checkbox(
+                "Filter out rows with ENROLL TOTAL as 0",
+                value=streamlit.session_state["filterZero"],
+                key="filterZeroCheckbox",
+            )
+
+            filter_message = (
+                "Filtering out rows with ENROLL TOTAL as 0 is enabled. To add rows with 0 back in, uncheck the box and re-select the widget."  # noqa: E501
+                if streamlit.session_state["filterZero"]
+                else "All rows, including those with ENROLL TOTAL as 0, are displayed. To filter out rows with 0, check the box and re-select the widget."  # noqa: E501
+            )
+            streamlit.markdown(f"> {filter_message}")
 
         try:
             fig: Figure

@@ -43,26 +43,28 @@ class CourseSchedule:
             "COMP": """SUBJECT = 'COMP' AND "CATALOG NUMBER" NOT IN ('391', '398', '490', '499', '605') AND "CATALOG NUMBER" NOT IN ('215', '231', '331', '431', '381', '386', '383', '483') AND SECTION NOT IN ('01L', '02L', '03L', '04L', '05L', '06L', '700N')"""  # noqa: E501
         }
 
-    def compute(self, minimumEnrollment: int = 0) -> DataFrame:
+    def compute(self, filterZeroEnrollment: bool = False) -> DataFrame:
         """
         Compute the course schedule data filtered by department and minimum
         enrollment.
 
         This method fetches the course schedule from the database, applies
         filters based on department, and filters out courses with enrollment
-        below the specified minimum  enrollment. The resulting data is
-        returned as a DataFrame.
+        below the specified minimum enrollment. If `filterZeroEnrollment` is
+        True, courses with an "ENROLL TOTAL" of 0 will be excluded. The
+        resulting data is returned as a DataFrame.
 
         :param minimumEnrollment: The minimum number of students enrolled to
             include a course, defaults to 0
         :type minimumEnrollment: int, optional
+        :param filterZeroEnrollment: Whether to filter out courses with zero
+            enrollment, defaults to False
+        :type filterZeroEnrollment: bool, optional
         :return: A DataFrame containing the filtered course schedule data.
         :rtype: DataFrame
         """
-        if minimumEnrollment < 0:
-            minimumEnrollment = 0
 
-        whereClasues: str = "WHERE " + " or ".join(
+        whereClauses: str = "WHERE " + " or ".join(
             [
                 "(" + self.departmentFilters[filter] + ")"
                 for filter in self.departmentFilters
@@ -73,7 +75,7 @@ class CourseSchedule:
             """SELECT SUBJECT, "WEIGHTED ENROLL TOTAL", "CATALOG NUMBER", "FQ CATALOG NUMBER", "FQ CLASS SECTION", "CLASS TITLE", INSTRUCTOR, "ENROLL TOTAL", "TRAD MEETING PATTERN", "CLASS START TIME", "CLASS END TIME", "UNIT CLASS DURATION", "INSTRUCTIONAL TIME", FACILITY, "COMBINED ID" FROM schedule """  # noqa: E501
         )
 
-        query = query + whereClasues + ";"
+        query = query + whereClauses + ";"
         query = query.strip()
 
         df: DataFrame = pandas.read_sql_query(
@@ -81,9 +83,10 @@ class CourseSchedule:
             con=self.conn,
         )
 
-        df = df[df["ENROLL TOTAL"] >= minimumEnrollment]
-
         df.reset_index(drop=True, inplace=True)
+
+        if filterZeroEnrollment:
+            df = df[df["ENROLL TOTAL"] > 0]
 
         return df
 
@@ -100,13 +103,22 @@ class CourseSchedule:
 
         clearContent()
 
-        dfs: List[DataFrame] = [self.compute()]
+        dfs: List[DataFrame] = [
+            self.compute(
+                filterZeroEnrollment=streamlit.session_state["filterZero"]
+            )
+        ]
 
         streamlit.session_state["analyticTitle"] = "Course Schedule"
         streamlit.session_state["analyticSubtitle"] = (
             "The current course \
         schedule"
         )
+
+        streamlit.session_state["filterZero"] = streamlit.checkbox(
+            "Filter out rows with ENROLL TOTAL as 0", value=False
+        )
+
         streamlit.session_state["dfList"] = dfs
 
     def plot(self, data: None) -> None:

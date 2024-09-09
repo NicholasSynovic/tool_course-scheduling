@@ -214,7 +214,7 @@ class ScheduleDensity(Analytic):
         clearContent()
 
         df: DataFrame = CourseSchedule(conn=self.conn).compute(
-            minimumEnrollment=1,
+            # minimumEnrollment=1,
         )
 
         dayIntervalTrees: dict[str, IntervalTree] = self.compute(
