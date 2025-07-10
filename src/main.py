@@ -236,6 +236,7 @@ def main() -> None:
             df: DataFrame
             for df in streamlit.session_state["dfList"]:
 
+                # TODO: Understand and refactor this
                 if streamlit.session_state["dfListTitles"] is not None:
                     streamlit.markdown(
                         body=f"##### \

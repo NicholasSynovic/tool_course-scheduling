@@ -122,6 +122,9 @@ def readExcelToDB(uf: UploadedFile, dbPath: str = ":memory:") -> Connection:
 
     df: DataFrame = read_excel(io=uf, engine="openpyxl")
 
+    df.columns = df.columns.str.upper()
+    df["ENROLL TOTAL"] = df["ENROLLMENT TOTAL"]
+
     df["INSTRUCTOR"] = df["INSTRUCTOR"].fillna(value="Turing,Alan")
     df["FACILITY"] = df["FACILITY"].fillna(value="Doyole Hall")
 
@@ -146,8 +149,10 @@ def readExcelToDB(uf: UploadedFile, dbPath: str = ":memory:") -> Connection:
 
     df["TRAD MEETING PATTERN"] = (
         df["MEETING PATTERN"]
-        .replace("TR", "R")
-        .replace("TTR", "TR")
+        # .replace("TR", "R")
+        .replace("Th", "R")
+        .replace("TTh", "TR")
+        # .replace("TTR", "TR")
         .replace("SA", "S")
         .replace("SU", "X")
         .fillna("No Meeting Pattern")
