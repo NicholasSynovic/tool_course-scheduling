@@ -1,7 +1,7 @@
 [project]
 name = "cs"
 version = "0.1.0"
-description = "Loyola University Chicago CS Department Course Scheduling Tool"
+description = "Loyola University Chicago (LUC) Course Scheduling (CS) Utility"
 authors = [{ name = "Nicholas M. Synovic", email = "nicholas.synovic@gmail.com" }]
 requires-python = "~=3.13"
 readme = "README.md"
