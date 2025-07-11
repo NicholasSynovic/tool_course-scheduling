@@ -1,25 +1,51 @@
-[tool.poetry]
-name = "src"
+[project]
+name = "prime"
 version = "0.1.0"
-description = ""
-authors = ["Nicholas M. Synovic <nicholas.synovic@gmail.com>"]
+description = "Loyola University Chicago CS Department Course Scheduling Tool"
+authors = [{ name = "Nicholas M. Synovic", email = "nicholas.synovic@gmail.com" }]
+requires-python = "~=3.13"
 readme = "README.md"
+keywords = [
+    "Education",
+    "Course Scheduling",
+    "Computer Science",
+    "Open Source"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Natural Language :: English",
+    "Operating System :: Unix",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: SQL",
+    "Topic :: Database",
+    "Topic :: Education",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Utilities"
+]
+dependencies = [
+    "intervaltree>=3.1.0,<4",
+    "pandas>=2.2.2,<3",
+    "numpy>=2.0.0,<3",
+    "matplotlib>=3.9.0,<4",
+    "seaborn>=0.13.2,<0.14",
+    "plotly>=5.22.0,<6",
+    "streamlit>=1.36.0,<2",
+    "openpyxl>=3.1.5,<4",
+    "sphinx>=7.3.7,<8",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
-intervaltree = "^3.1.0"
-pandas = "^2.2.2"
-numpy = "^2.0.0"
-matplotlib = "^3.9.0"
-seaborn = "^0.13.2"
-plotly = "^5.22.0"
-streamlit = "^1.36.0"
-openpyxl = "^3.1.5"
-sphinx = "^7.3.7"
-
-[tool.black]
-line-length = 79
+[project.urls]
+Homepage = "https://github.com/NicholasSynovic/luc-cs"
+Repository = "https://github.com/NicholasSynovic/luc-cs"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
