@@ -7,33 +7,19 @@ import streamlit
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
 
-from src.analytics.courseSchedule import CourseSchedule
-from src.utils import clearContent
-from src.utils.analytic import Analytic
+from cs.analytics.courseSchedule import CourseSchedule
+from cs.utils import clearContent
+from cs.utils.analytic import Analytic
 
 
-class zeroEnrollment(Analytic):
+class InTroubleCourses(Analytic):
     """
-    Analytic class for identifying and displaying courses with zero enrollment.
+    InTroubleCourses class to identify and display courses with low
+    enrollments.
 
-    Inherits from the Analytic abstract base class and implements methods
-    for computing and visualizing courses with zero student enrollment.
-
-    Attributes:
-        conn (Connection): Database connection object used for querying course data.
-
-    Methods:
-        __init__(self, conn: Connection) -> None:
-            Initialize the zeroEnrollment class with a database connection.
-
-        compute(self) -> DataFrameGroupBy:
-            Compute the course data and group by combined ID.
-
-        run(self) -> None:
-            Analyzes and displays courses with zero enrollment.
-
-        plot(self, data: None) -> None:
-            Empty method required by the Analytic abstract base class.
+    This class provides functionalities to compute the courses that are in
+    trouble due to low enrollments and visualize these courses using
+    Streamlit.
     """
 
     def __init__(self, conn: Connection) -> None:
@@ -48,7 +34,7 @@ class zeroEnrollment(Analytic):
         """
         self.conn: Connection = conn
 
-    def compute(self) -> DataFrameGroupBy:
+    def compute(self, filterZeroEnrollment: bool = False) -> DataFrameGroupBy:
         """
         Compute the course data and group by combined ID.
 
@@ -75,39 +61,50 @@ class zeroEnrollment(Analytic):
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
         df = df[FILTER_FIELDS]
 
-        return df.groupby(by="FQ CLASS SECTION")
+        if filterZeroEnrollment:
+            df = df[df["ENROLL TOTAL"] > 0]
+
+        return df.groupby(by="COMBINED ID")
 
     def run(self) -> None:
         """
-        Analyzes and displays courses with zero enrollment.
+        Execute the workflow to compute and display courses with low
+        enrollments.
 
-        This method performs the following actions:
-        1. Clears the current content.
-        2. Sets the analytic title and subtitle in the Streamlit session state.
-        3. Computes the data for analysis.
-        4. Filters the computed data to identify courses with zero student enrollment.
-        5. Updates the Streamlit session state with the filtered data and their respective titles.
+        Computes the courses that are in trouble due to low enrollments,
+        clears existing content, and updates the Streamlit session state with
+        the resulting data for visualization.
 
         :return: None
+        :rtype: None
         """
         clearContent()
 
-        streamlit.session_state["analyticTitle"] = "Courses with 0 enrollment"
-        streamlit.session_state["analyticSubtitle"] = "List of courses with no students enrolled in them"
+        streamlit.session_state["analyticTitle"] = "In Trouble Courses"
+        streamlit.session_state["analyticSubtitle"] = "Courses in trouble"
 
         dfList: List[DataFrame] = []
         dfListTitles: List[str] = []
 
-        
-        dfs: DataFrameGroupBy = self.compute()
+        troubleThreshold: int = 10
+        inTroubleCount: count = count(start=1)
+
+        dfs: DataFrameGroupBy = self.compute(
+            filterZeroEnrollment=streamlit.session_state["filterZero"]
+        )
+
+        streamlit.session_state["filterZero"] = streamlit.checkbox(
+            "Filter out rows with ENROLL TOTAL as 0", value=False
+        )
 
         group: DataFrame
         for _, group in dfs:
-            fq_class_section = group["FQ CLASS SECTION"].iloc[0]
             group_sum: int = ceil(group["WEIGHTED ENROLL TOTAL"].sum())
-            if group_sum == 0:
+            if group_sum < troubleThreshold:
+                in_trouble_val = next(inTroubleCount)
+                group_color = "green" if group_sum >= 12 else "red"  # for now
                 dfListTitles.append(
-                    f"COMP {fq_class_section}"
+                    f":{group_color}[Course {in_trouble_val} has {group_sum} enrollments]"  # noqa: E501
                 )
                 dfList.append(group)
 

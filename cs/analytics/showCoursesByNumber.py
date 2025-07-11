@@ -5,9 +5,9 @@ import streamlit
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
 
-from src.analytics.courseSchedule import CourseSchedule
-from src.utils import clearContent
-from src.utils.analytic import Analytic
+from cs.analytics.courseSchedule import CourseSchedule
+from cs.utils import clearContent
+from cs.utils.analytic import Analytic
 
 
 class ShowCoursesByNumber(Analytic):
@@ -66,9 +66,7 @@ class ShowCoursesByNumber(Analytic):
         """
         clearContent()
 
-        streamlit.session_state["analyticTitle"] = (
-            "Show Courses by Course Number"
-        )
+        streamlit.session_state["analyticTitle"] = "Show Courses by Course Number"
         streamlit.session_state["analyticSubtitle"] = (
             "A view of courses that share a course number"
         )

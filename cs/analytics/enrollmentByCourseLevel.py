@@ -6,9 +6,9 @@ import streamlit
 from pandas import DataFrame
 from plotly.graph_objects import Figure
 
-from src.analytics.courseSchedule import CourseSchedule
-from src.utils import clearContent
-from src.utils.analytic import Analytic
+from cs.analytics.courseSchedule import CourseSchedule
+from cs.utils import clearContent
+from cs.utils.analytic import Analytic
 
 
 class EnrollmentByCourseLevel(Analytic):
@@ -125,9 +125,7 @@ class EnrollmentByCourseLevel(Analytic):
             )
 
             # Calculate and plot the average weighted enrollment
-            average_enrollment = course_enrollment[
-                "WEIGHTED ENROLL TOTAL"
-            ].mean()
+            average_enrollment = course_enrollment["WEIGHTED ENROLL TOTAL"].mean()
             fig.add_vline(
                 x=average_enrollment,
                 line=dict(color="red", dash="dash"),
@@ -158,9 +156,7 @@ class EnrollmentByCourseLevel(Analytic):
         data: List[Tuple[str, Figure]] = self.plot()
 
         streamlit.session_state["analyticTitle"] = "Enrollment by course level"
-        streamlit.session_state["analyticSubtitle"] = (
-            "Enrollment by course level"
-        )
+        streamlit.session_state["analyticSubtitle"] = "Enrollment by course level"
 
         streamlit.session_state["figList"] = [datum[1] for datum in data]
         streamlit.session_state["figListTitles"] = [datum[0] for datum in data]

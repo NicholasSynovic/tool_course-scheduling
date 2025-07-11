@@ -6,9 +6,9 @@ from pandas import DataFrame
 from plotly import express
 from plotly.graph_objects import Figure
 
-from src.analytics.courseSchedule import CourseSchedule
-from src.utils import clearContent
-from src.utils.analytic import Analytic
+from cs.analytics.courseSchedule import CourseSchedule
+from cs.utils import clearContent
+from cs.utils.analytic import Analytic
 
 
 class AssignmentsPerFaculty(Analytic):
@@ -51,9 +51,7 @@ class AssignmentsPerFaculty(Analytic):
 
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
-        dataDF = (
-            df.groupby("INSTRUCTOR")["COMBINED ID"].nunique().reset_index()
-        )
+        dataDF = df.groupby("INSTRUCTOR")["COMBINED ID"].nunique().reset_index()
         dataDF.columns = ["Instructor Name", "Number of Courses"]
 
         return dataDF[dataDF["Instructor Name"] != "UNKNOWN"]
@@ -121,6 +119,4 @@ class AssignmentsPerFaculty(Analytic):
         streamlit.session_state["dfListTitles"] = ["Faculty Assignment Count"]
 
         streamlit.session_state["figList"] = figs
-        streamlit.session_state["figListTitles"] = [
-            "Faculty Assignment Count Plot"
-        ]
+        streamlit.session_state["figListTitles"] = ["Faculty Assignment Count Plot"]

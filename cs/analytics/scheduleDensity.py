@@ -9,9 +9,9 @@ from pandas import DataFrame, Series
 from plotly import graph_objects
 from plotly.graph_objects import Figure
 
-from src.analytics.courseSchedule import CourseSchedule
-from src.utils import clearContent, datetimeToMinutes
-from src.utils.analytic import Analytic
+from cs.analytics.courseSchedule import CourseSchedule
+from cs.utils import clearContent, datetimeToMinutes
+from cs.utils.analytic import Analytic
 
 
 class ScheduleDensity(Analytic):
@@ -179,9 +179,7 @@ class ScheduleDensity(Analytic):
         fig.update_layout(
             title=f"Schedule Density <br><sup>Overlap Interval = {overlapThreshold}</sup>",  # noqa: E501
             xaxis=dict(
-                tickvals=[datetimeToMinutes(dt=t) for t in times][
-                    ::12
-                ],  # Every hour
+                tickvals=[datetimeToMinutes(dt=t) for t in times][::12],  # Every hour
                 ticktext=timeLabels[::12],
                 title="Time",
             ),

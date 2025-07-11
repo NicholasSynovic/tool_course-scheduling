@@ -5,7 +5,7 @@ import pandas
 import streamlit
 from pandas import DataFrame
 
-from src.utils import clearContent
+from cs.utils import clearContent
 
 
 class CourseSchedule:
@@ -71,9 +71,7 @@ class CourseSchedule:
             ]
         )
 
-        query: str = (
-            """SELECT SUBJECT, "WEIGHTED ENROLL TOTAL", "CATALOG NUMBER", "FQ CATALOG NUMBER", "FQ CLASS SECTION", "CLASS TITLE", INSTRUCTOR, "ENROLL TOTAL", "TRAD MEETING PATTERN", "CLASS START TIME", "CLASS END TIME", "UNIT CLASS DURATION", "INSTRUCTIONAL TIME", FACILITY, "COMBINED ID" FROM schedule """  # noqa: E501
-        )
+        query: str = """SELECT SUBJECT, "WEIGHTED ENROLL TOTAL", "CATALOG NUMBER", "FQ CATALOG NUMBER", "FQ CLASS SECTION", "CLASS TITLE", INSTRUCTOR, "ENROLL TOTAL", "TRAD MEETING PATTERN", "CLASS START TIME", "CLASS END TIME", "UNIT CLASS DURATION", "INSTRUCTIONAL TIME", FACILITY, "COMBINED ID" FROM schedule """  # noqa: E501
 
         query = query + whereClauses + ";"
         query = query.strip()
@@ -104,16 +102,12 @@ class CourseSchedule:
         clearContent()
 
         dfs: List[DataFrame] = [
-            self.compute(
-                filterZeroEnrollment=streamlit.session_state["filterZero"]
-            )
+            self.compute(filterZeroEnrollment=streamlit.session_state["filterZero"])
         ]
 
         streamlit.session_state["analyticTitle"] = "Course Schedule"
-        streamlit.session_state["analyticSubtitle"] = (
-            "The current course \
+        streamlit.session_state["analyticSubtitle"] = "The current course \
         schedule"
-        )
 
         streamlit.session_state["filterZero"] = streamlit.checkbox(
             "Filter out rows with ENROLL TOTAL as 0", value=False

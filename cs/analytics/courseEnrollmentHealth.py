@@ -5,9 +5,9 @@ import streamlit
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
 
-from src.analytics.courseSchedule import CourseSchedule
-from src.utils import clearContent
-from src.utils.analytic import Analytic
+from cs.analytics.courseSchedule import CourseSchedule
+from cs.utils import clearContent
+from cs.utils.analytic import Analytic
 
 
 class CourseEnrollmentHealth(Analytic):
@@ -133,8 +133,7 @@ class CourseEnrollmentHealth(Analytic):
         streamlit.session_state["dfList"] = dfs
         streamlit.session_state["dfListTitles"] = [datum[0] for datum in data]
         streamlit.session_state["dfListSubtitles"] = [
-            f":{color}[Weighted Enrollments = {amount}]"
-            for _, _, color, amount in data
+            f":{color}[Weighted Enrollments = {amount}]" for _, _, color, amount in data
         ]
 
     def plot(self, data: None) -> None:

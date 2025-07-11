@@ -4,9 +4,9 @@ from typing import List
 import streamlit
 from pandas import DataFrame
 
-from src.analytics.courseSchedule import CourseSchedule
-from src.utils import clearContent
-from src.utils.analytic import Analytic
+from cs.analytics.courseSchedule import CourseSchedule
+from cs.utils import clearContent
+from cs.utils.analytic import Analytic
 
 
 class OnlineCourseSchedule(Analytic):
@@ -65,13 +65,9 @@ class OnlineCourseSchedule(Analytic):
 
         dfs: List[DataFrame] = [self.compute()]
 
-        streamlit.session_state["analyticTitle"] = (
-            "Online Only Course Schedule"
-        )
-        streamlit.session_state["analyticSubtitle"] = (
-            "The current course \
+        streamlit.session_state["analyticTitle"] = "Online Only Course Schedule"
+        streamlit.session_state["analyticSubtitle"] = "The current course \
         schedule for online only courses"
-        )
         streamlit.session_state["dfList"] = dfs
 
     def plot(self, data: None) -> None:

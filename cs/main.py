@@ -7,23 +7,23 @@ from plotly.graph_objects import Figure
 from streamlit.delta_generator import DeltaGenerator
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
-from src.analytics.assignmentsPerFaculty import AssignmentsPerFaculty
-from src.analytics.courseEnrollmentHealth import CourseEnrollmentHealth
-from src.analytics.courseSchedule import CourseSchedule
-from src.analytics.enrollmentByCourseLevel import EnrollmentByCourseLevel
-from src.analytics.instructorAssignments import InstructorAssignments
-from src.analytics.inTroubleCourses import InTroubleCourses
-from src.analytics.onlineCourseSchedule import OnlineCourseSchedule
-from src.analytics.parameterizedCourseSchedule import FilterCourseSchedule
-from src.analytics.scheduleDensity import ScheduleDensity
-from src.analytics.schoolCreditHours import SchoolCreditHours
-from src.analytics.showCoursesByNumber import ShowCoursesByNumber
-from src.analytics.teachingDistributionByWeightedEnrollment import (
+from cs.analytics.assignmentsPerFaculty import AssignmentsPerFaculty
+from cs.analytics.courseEnrollmentHealth import CourseEnrollmentHealth
+from cs.analytics.courseSchedule import CourseSchedule
+from cs.analytics.enrollmentByCourseLevel import EnrollmentByCourseLevel
+from cs.analytics.instructorAssignments import InstructorAssignments
+from cs.analytics.inTroubleCourses import InTroubleCourses
+from cs.analytics.onlineCourseSchedule import OnlineCourseSchedule
+from cs.analytics.parameterizedCourseSchedule import FilterCourseSchedule
+from cs.analytics.scheduleDensity import ScheduleDensity
+from cs.analytics.schoolCreditHours import SchoolCreditHours
+from cs.analytics.showCoursesByNumber import ShowCoursesByNumber
+from cs.analytics.teachingDistributionByWeightedEnrollment import (
     TeachingDistributionByWeightedEnrollment,
 )
-from src.analytics.zeroEnrollment import zeroEnrollment
-from src.excel2db import readExcelToDB
-from src.utils import initialState, resetState
+from cs.analytics.zeroEnrollment import zeroEnrollment
+from cs.excel2db import readExcelToDB
+from cs.utils import initialState, resetState
 
 
 def main() -> None:
@@ -45,9 +45,7 @@ def main() -> None:
     streamlit.title(body="CS Dept. Course Scheduler Utility")
 
     projectFolder = "../"  # Modify this path as necessary
-    existingFiles = [
-        f for f in os.listdir(projectFolder) if f.endswith(".xlsx")
-    ]  # noqa: E501
+    existingFiles = [f for f in os.listdir(projectFolder) if f.endswith(".xlsx")]  # noqa: E501
 
     streamlit.write("### Select an existing file or upload a new one")
     selectedFile = streamlit.selectbox(
@@ -85,9 +83,7 @@ def main() -> None:
             streamlit.button(
                 label="Show Course Schedule",
                 use_container_width=True,
-                on_click=CourseSchedule(
-                    conn=streamlit.session_state["dbConn"]
-                ).run,
+                on_click=CourseSchedule(conn=streamlit.session_state["dbConn"]).run,
             )
             streamlit.button(
                 label="Online Only Courses",
@@ -99,9 +95,7 @@ def main() -> None:
             streamlit.button(
                 label="Schedule Density",
                 use_container_width=True,
-                on_click=ScheduleDensity(
-                    conn=streamlit.session_state["dbConn"]
-                ).run,
+                on_click=ScheduleDensity(conn=streamlit.session_state["dbConn"]).run,
             )
             # TODO: Implement viz for this
             streamlit.button(
@@ -121,9 +115,7 @@ def main() -> None:
             streamlit.button(
                 label="Courses with No Enrollments",
                 use_container_width=True,
-                on_click=zeroEnrollment(
-                    conn=streamlit.session_state["dbConn"]
-                ).run,
+                on_click=zeroEnrollment(conn=streamlit.session_state["dbConn"]).run,
             )
 
         with column2:
@@ -178,9 +170,7 @@ def main() -> None:
             streamlit.button(
                 label="School Credit Hours",
                 use_container_width=True,
-                on_click=SchoolCreditHours(
-                    conn=streamlit.session_state["dbConn"]
-                ).run,
+                on_click=SchoolCreditHours(conn=streamlit.session_state["dbConn"]).run,
             )
 
         # if "filterZero" not in streamlit.session_state:
@@ -189,14 +179,10 @@ def main() -> None:
         streamlit.divider()
 
         if streamlit.session_state["analyticTitle"] is not None:
-            streamlit.markdown(
-                body=f"## {streamlit.session_state['analyticTitle']}"
-            )
+            streamlit.markdown(body=f"## {streamlit.session_state['analyticTitle']}")
 
         if streamlit.session_state["analyticSubtitle"] is not None:
-            streamlit.markdown(
-                body=f"> {streamlit.session_state['analyticSubtitle']}"
-            )
+            streamlit.markdown(body=f"> {streamlit.session_state['analyticSubtitle']}")
 
         if "filterZero" not in streamlit.session_state:
             streamlit.session_state["filterZero"] = False  # Default val
@@ -218,7 +204,6 @@ def main() -> None:
         try:
             fig: Figure
             for fig in streamlit.session_state["figList"]:
-
                 if streamlit.session_state["figListTitles"] is not None:
                     streamlit.markdown(
                         body=f"### \
@@ -235,7 +220,6 @@ def main() -> None:
         try:
             df: DataFrame
             for df in streamlit.session_state["dfList"]:
-
                 # TODO: Understand and refactor this
                 if streamlit.session_state["dfListTitles"] is not None:
                     streamlit.markdown(

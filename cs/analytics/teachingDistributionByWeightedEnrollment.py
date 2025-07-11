@@ -5,9 +5,9 @@ import streamlit
 from pandas import DataFrame, Series
 from plotly.graph_objects import Figure
 
-from src.analytics.courseSchedule import CourseSchedule
-from src.utils import clearContent
-from src.utils.analytic import Analytic
+from cs.analytics.courseSchedule import CourseSchedule
+from cs.utils import clearContent
+from cs.utils.analytic import Analytic
 
 
 class TeachingDistributionByWeightedEnrollment(Analytic):
@@ -48,9 +48,7 @@ class TeachingDistributionByWeightedEnrollment(Analytic):
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
         data: Series = (
-            df.groupby(by="INSTRUCTOR")["WEIGHTED ENROLL TOTAL"]
-            .sum()
-            .reset_index()
+            df.groupby(by="INSTRUCTOR")["WEIGHTED ENROLL TOTAL"].sum().reset_index()
         )
 
         return data.sort_values(by="WEIGHTED ENROLL TOTAL", ascending=False)

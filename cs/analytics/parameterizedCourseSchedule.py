@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-from src.analytics.courseSchedule import CourseSchedule
+from cs.analytics.courseSchedule import CourseSchedule
 
 
 class FilterCourseSchedule(CourseSchedule):
@@ -37,7 +37,7 @@ class FilterCourseSchedule(CourseSchedule):
         for column in df.columns:
             if column in ["COMBINED ID", "INSTRUCTIONAL TIME", "CATALOG NUMBER"]:
                 continue  # Skip the filters for these columns
-            
+
             elif pd.api.types.is_numeric_dtype(df[column]):
                 min_val = df[column].min()
                 max_val = df[column].max()
@@ -46,17 +46,21 @@ class FilterCourseSchedule(CourseSchedule):
                         f"Filter by {column}",
                         min_val,
                         max_val,
-                        value=st.session_state.get(f"filter_{column}", (min_val, max_val))
+                        value=st.session_state.get(
+                            f"filter_{column}", (min_val, max_val)
+                        ),
                     )
                     st.session_state[f"filter_{column}"] = self.filters[column]
                 else:
-                    st.write(f"Column {column} has the same min and max value: {min_val}. Slider is not applicable.")
+                    st.write(
+                        f"Column {column} has the same min and max value: {min_val}. Slider is not applicable."
+                    )
             else:
                 unique_values = df[column].unique().tolist()
                 self.filters[column] = st.multiselect(
                     f"Filter by {column}",
                     unique_values,
-                    default=st.session_state.get(f"filter_{column}", [])
+                    default=st.session_state.get(f"filter_{column}", []),
                 )
                 st.session_state[f"filter_{column}"] = self.filters[column]
 
@@ -68,7 +72,9 @@ class FilterCourseSchedule(CourseSchedule):
 
         for column, filter_value in self.filters.items():
             if isinstance(filter_value, tuple):  # Slider filter
-                df = df[(df[column] >= filter_value[0]) & (df[column] <= filter_value[1])]
+                df = df[
+                    (df[column] >= filter_value[0]) & (df[column] <= filter_value[1])
+                ]
             elif isinstance(filter_value, list) and filter_value:  # Multiselect filter
                 df = df[df[column].isin(filter_value)]
 

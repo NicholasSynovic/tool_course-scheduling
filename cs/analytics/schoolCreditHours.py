@@ -6,12 +6,11 @@ import streamlit
 from pandas import DataFrame
 from plotly.graph_objects import Figure
 
-from src.analytics.courseSchedule import CourseSchedule
-from src.utils.analytic import Analytic
+from cs.analytics.courseSchedule import CourseSchedule
+from cs.utils.analytic import Analytic
 
 
 class SchoolCreditHours(Analytic):
-
     def __init__(self, conn: Connection) -> None:
         """
         Initialize the CourseEnrollmentHealth class with a database
@@ -26,7 +25,6 @@ class SchoolCreditHours(Analytic):
         self.conn = conn
 
     def compute(self) -> List[Tuple[str, DataFrame, str, int]]:
-
         df: DataFrame = CourseSchedule(conn=self.conn).compute()
 
         if (
@@ -55,22 +53,17 @@ class SchoolCreditHours(Analytic):
         return groupedDF
 
     def run(self) -> None:
-
         data: DataFrame = self.compute()
         fig: Figure = self.plot(data)
 
         streamlit.session_state["analyticTitle"] = "School Credit Hours"
         streamlit.session_state["dfList"] = [data]
-        streamlit.session_state["dfListTitles"] = [
-            "Total Credit Hours by Course Level"
-        ]
+        streamlit.session_state["dfListTitles"] = ["Total Credit Hours by Course Level"]
 
         streamlit.session_state["figList"] = [fig]
 
     def plot(self, data: DataFrame) -> Figure:
-
         if data is not None and not data.empty:
-
             fig = go.Figure()
 
             fig.add_trace(

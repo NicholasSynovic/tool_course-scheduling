@@ -1,5 +1,5 @@
 [project]
-name = "prime"
+name = "cs"
 version = "0.1.0"
 description = "Loyola University Chicago CS Department Course Scheduling Tool"
 authors = [{ name = "Nicholas M. Synovic", email = "nicholas.synovic@gmail.com" }]

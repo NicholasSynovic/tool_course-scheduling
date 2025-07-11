@@ -5,7 +5,7 @@ import pandas
 from pandas import DataFrame, Series, read_excel
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
-from src.utils import datetimeToMinutes
+from cs.utils import datetimeToMinutes
 
 
 def _computeInstructionalTime(row: Series):

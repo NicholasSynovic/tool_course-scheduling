@@ -6,9 +6,9 @@ import streamlit
 from pandas import DataFrame
 from pandas.core.groupby import DataFrameGroupBy
 
-from src.analytics.courseSchedule import CourseSchedule
-from src.utils import clearContent
-from src.utils.analytic import Analytic
+from cs.analytics.courseSchedule import CourseSchedule
+from cs.utils import clearContent
+from cs.utils.analytic import Analytic
 
 
 class InstructorAssignments(Analytic):
@@ -69,9 +69,7 @@ class InstructorAssignments(Analytic):
         )
 
         streamlit.session_state["analyticTitle"] = "Instructor Assignments"
-        streamlit.session_state["analyticSubtitle"] = (
-            "Show instructor assignments"
-        )
+        streamlit.session_state["analyticSubtitle"] = "Show instructor assignments"
 
         streamlit.session_state["filterZero"] = streamlit.checkbox(
             "Filter out rows with ENROLL TOTAL as 0", value=False

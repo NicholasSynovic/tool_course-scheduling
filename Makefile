@@ -1,19 +1,11 @@
 build:
-	poetry build
-	pip install dist/*.tar.gz
-
-build-docs:
-	sphinx-build --builder html src-docs build-docs
+	git describe --tags --abbrev=0 | tail -n 1 | xargs -I % uv version %
+	rm -rf dist/
+	uv build
+	uv pip install dist/*.tar.gz
 
 create-dev:
-	rm -rf env
-	python3.10 -m venv env
-	( \
-		. env/bin/activate; \
-		pip install -r requirements.txt; \
-		poetry install; \
-		deactivate; \
-	)
-
-create-docs:
-	sphinx-apidoc src --output-dir src-docs --maxdepth 100 --separate
+	pre-commit install
+	pre-commit autoupdate
+	uv sync
+	uv build
