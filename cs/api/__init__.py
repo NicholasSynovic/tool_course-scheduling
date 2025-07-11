@@ -1,0 +1,2 @@
+DEFAULT_INSTRUCTOR: str = "N/A"
+DEFAULT_FACILITY: str = "N/A"
